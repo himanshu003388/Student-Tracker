@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Tracker</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="light-mode">
+    <header>
+        <nav class="top-nav">
+            <div class="logo">
+                <i class="fas fa-rocket"></i> <span>CS Tracker</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#dashboard" class="active" data-section="dashboard"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                <li><a href="#coding" data-section="coding"><i class="fas fa-code"></i> <span>Coding</span></a></li>
+                <li><a href="#habits" data-section="habits"><i class="fas fa-calendar-check"></i> <span>Habits</span></a></li>
+                <li><a href="#pomodoro" data-section="pomodoro"><i class="fas fa-stopwatch"></i> <span>Pomodoro</span></a></li>
+                <li><a href="#notes" data-section="notes"><i class="fas fa-sticky-note"></i> <span>Notes</span></a></li>
+                <li><a href="#projects" data-section="projects"><i class="fas fa-project-diagram"></i> <span>Projects</span></a></li>
+                <li><a href="#placements" data-section="placements"><i class="fas fa-briefcase"></i> <span>Placements</span></a></li>
+                <li><a href="#money" data-section="money"><i class="fas fa-wallet"></i> <span>Money Tracker</span></a></li>
+            </ul>
+            <div class="nav-actions">
+                <button id="theme-toggle" title="Toggle Dark/Light Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <main id="content-area">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="active-section">
+            <div class="dashboard-top-row">
+                <div class="dashboard-tasks-container card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-tasks"></i> Daily Tasks</h2>
+                        <input type="text" id="task-search" placeholder="Search tasks..." class="search-input">
+                    </div>
+                    <div class="task-input-container">
+                        <input type="text" id="task-input" placeholder="What needs to be done?">
+                        <button id="add-task-btn" class="btn-primary"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div class="task-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                    </div>
+                    <ul id="task-list" class="task-list"></ul>
+                </div>
+
+                <div class="quick-links-container card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-bolt"></i> Quick Links</h2>
+                        <button id="add-link-btn" class="btn-primary small"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div class="links-grid" id="links-grid">
+                        <!-- Links will be injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-main-layout mt-20">
+                <aside class="dashboard-sidebar">
+                    <div class="welcome-card card">
+                        <div class="date-time">
+                            <h1 id="current-time">00:00:00</h1>
+                            <p id="current-date">Monday, 1 January 2024</p>
+                        </div>
+                        <div class="quote-box mt-20">
+                            <p id="quote-text">"The only way to do great work is to love what you do."</p>
+                            <cite id="quote-author">- Steve Jobs</cite>
+                        </div>
+                    </div>
+
+                    <div class="stats-sidebar-grid mt-20">
+                        <div class="stat-card">
+                            <i class="fas fa-check-double"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-tasks-done">0</span>
+                                <span class="stat-label">Tasks Done</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-laptop-code"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-coding-today">0</span>
+                                <span class="stat-label">Solved Today</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-fire-alt"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-streak">0</span>
+                                <span class="stat-label">Day Streak</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <i class="fas fa-hourglass-half"></i>
+                            <div class="stat-info">
+                                <span class="stat-value" id="stat-focus-time">0h</span>
+                                <span class="stat-label">Focus Time</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="progress-card card mt-20">
+                        <h3>Daily Progress</h3>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="task-progress-bar" style="width: 0%"></div>
+                        </div>
+                        <p class="mt-10" style="font-size: 0.85rem; color: var(--text-muted);">
+                            <span id="task-progress-text">0/0</span> tasks completed
+                        </p>
+                    </div>
+                </aside>
+
+                <div class="dashboard-content">
+                    <div class="coding-summary card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-chart-line"></i> Coding Activity</h3>
+                            <div class="platform-icons">
+                                <i class="fab fa-linkedin" title="LinkedIn"></i>
+                                <i class="fab fa-github" title="GitHub"></i>
+                                <span class="gfg-icon-text" title="GFG">GFG</span>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="coding-chart-dashboard"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="minimal-notepad card mt-20">
+                        <div class="section-header">
+                            <h3><i class="fas fa-sticky-note"></i> Quick Notepad</h3>
+                        </div>
+                        <textarea id="dashboard-note" placeholder="Type something quick here... it saves automatically!"></textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Coding Section -->
+        <section id="coding" class="hidden">
+            <div class="section-header">
+                <h2>Coding Practice Tracker</h2>
+            </div>
+            <div class="coding-container">
+                <div class="coding-form card">
+                    <h3>Log Activity</h3>
+                    <form id="coding-log-form">
+                        <div class="form-group">
+                            <label for="platform">Platform</label>
+                            <select id="platform" required>
+                                <option value="LeetCode">LeetCode</option>
+                                <option value="GFG">GFG</option>
+                                <option value="Codeforces">Codeforces</option>
+                                <option value="CodeChef">CodeChef</option>
+                                <option value="HackerRank">HackerRank</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="problems-count">Problems Solved</label>
+                            <input type="number" id="problems-count" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="difficulty">Difficulty</label>
+                            <select id="difficulty">
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="coding-notes">Notes</label>
+                            <textarea id="coding-notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary block">Log Problems</button>
+                    </form>
+                </div>
+                <div class="coding-stats card">
+                    <h3>Weekly Progress</h3>
+                    <canvas id="coding-chart"></canvas>
+                </div>
+            </div>
+            <div class="coding-history card mt-20">
+                <h3>Recent Logs</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Platform</th>
+                                <th>Solved</th>
+                                <th>Difficulty</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coding-log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Habits Section -->
+        <section id="habits" class="hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar-check"></i> Monthly Habit Tracker</h2>
+                <div class="header-actions">
+                    <button id="reset-habits-btn" class="btn-text" title="Reset Habits for New Month" onclick="resetHabits()"><i class="fas fa-sync-alt"></i></button>
+                    <button id="add-habit-btn" class="btn-primary small"><i class="fas fa-plus"></i> Add Habit</button>
+                    <div class="streak-badge">
+                        <i class="fas fa-fire"></i> <span id="habit-streak-display">0</span> Day Streak
+                    </div>
+                </div>
+            </div>
+            <div class="habits-container card">
+                <div class="habit-month-header" id="habit-month-name">
+                    <!-- Month name will be injected here -->
+                </div>
+                <div class="habits-table-wrapper">
+                    <table class="habits-table">
+                        <thead>
+                            <tr id="habits-table-head">
+                                <!-- Days 1-31 will be injected here -->
+                            </tr>
+                        </thead>
+                        <tbody id="habits-table-body">
+                            <!-- Habits will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="habit-extras-grid mt-20">
+                <div class="targets-container card">
+                    <div class="section-header">
+                        <h3><i class="fas fa-bullseye"></i> Targets</h3>
+                        <div class="target-controls">
+                            <button id="add-weekly-target-btn" class="btn-primary small"><i class="fas fa-plus"></i> Weekly</button>
+                            <button id="add-monthly-target-btn" class="btn-primary small"><i class="fas fa-plus"></i> Monthly</button>
+                        </div>
+                    </div>
+                    <div class="targets-wrapper">
+                        <div class="target-column">
+                            <h4>Weekly Targets</h4>
+                            <ul id="weekly-targets-list" class="target-list-simple"></ul>
+                        </div>
+                        <div class="target-column">
+                            <h4>Monthly Targets</h4>
+                            <ul id="monthly-targets-list" class="target-list-simple"></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="habit-progress-graph card">
+                    <h3><i class="fas fa-chart-area"></i> Completion Trends</h3>
+                    <div class="chart-container" style="height: 200px;">
+                        <canvas id="habit-progress-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pomodoro Section -->
+        <section id="pomodoro" class="hidden">
+            <div class="section-header">
+                <h2>Pomodoro Timer</h2>
+            </div>
+            <div class="pomodoro-container card">
+                <div class="pomo-modes">
+                    <button class="pomo-mode-btn active" data-mode="work">Work (25m)</button>
+                    <button class="pomo-mode-btn" data-mode="shortBreak">Short Break (5m)</button>
+                    <button class="pomo-mode-btn" data-mode="longBreak">Long Break (15m)</button>
+                </div>
+                <div class="timer-display" id="timer-display">25:00</div>
+                <div class="timer-controls">
+                    <button id="pomo-start-btn" class="btn-primary large">Start</button>
+                    <button id="pomo-reset-btn" class="btn-secondary large">Reset</button>
+                </div>
+                <div class="pomo-settings mt-20">
+                    <button id="pomo-settings-btn" class="btn-text"><i class="fas fa-cog"></i> Settings</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Notes Section -->
+        <section id="notes" class="hidden">
+            <div class="section-header">
+                <h2>Notes & Snippets</h2>
+                <input type="text" id="note-search" placeholder="Search notes..." class="search-input">
+                <button id="add-note-btn" class="btn-primary small"><i class="fas fa-plus"></i> New Note</button>
+            </div>
+            <div class="notes-grid" id="notes-grid">
+                <!-- Notes will be injected here -->
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="hidden">
+            <div class="section-header">
+                <h2>Project Tracker</h2>
+                <button id="add-project-btn" class="btn-primary small"><i class="fas fa-plus"></i> Add Project</button>
+            </div>
+            <div class="projects-grid" id="projects-grid">
+                <!-- Projects will be injected here -->
+            </div>
+        </section>
+
+        <!-- Placements Section -->
+        <section id="placements" class="hidden">
+            <div class="section-header">
+                <h2>Placement & Internship Tracker</h2>
+                <button id="add-placement-btn" class="btn-primary small"><i class="fas fa-plus"></i> Add Application</button>
+            </div>
+            <div class="table-container card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Applied Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="placement-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Money Tracker Section -->
+        <section id="money" class="hidden">
+            <div class="section-header">
+                <h2>💰 Money Tracker</h2>
+                <div class="header-actions">
+                    <button id="money-export-btn" class="btn-text" title="Export Transactions"><i class="fas fa-file-export"></i></button>
+                    <button id="money-import-btn" class="btn-text" title="Import Transactions"><i class="fas fa-file-import"></i></button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="money-summary-grid">
+                <div class="money-stat-card card income">
+                    <i class="fas fa-arrow-up"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Income</span>
+                        <span class="stat-value" id="money-total-income">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card expense">
+                    <i class="fas fa-arrow-down"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Expense</span>
+                        <span class="stat-value" id="money-total-expense">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card balance">
+                    <i class="fas fa-wallet"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">Current Balance</span>
+                        <span class="stat-value" id="money-current-balance">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card month-expense">
+                    <i class="fas fa-calendar-minus"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">This Month Exp</span>
+                        <span class="stat-value" id="money-month-expense">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card month-income">
+                    <i class="fas fa-calendar-plus"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">This Month Inc</span>
+                        <span class="stat-value" id="money-month-income">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card month-balance">
+                    <i class="fas fa-piggy-bank"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">This Month Bal</span>
+                        <span class="stat-value" id="money-month-balance">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Add Section -->
+            <div class="quick-add-section card mt-20">
+                <h3><i class="fas fa-bolt"></i> Quick Add Expenses</h3>
+                <div class="quick-add-btns">
+                    <button class="quick-add-btn" onclick="quickAddExpense('Mess', 120)">Mess ₹120</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Snacks', 50)">Snacks ₹50</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Diet', 40)">Milk ₹40</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Diet', 60)">Eggs ₹60</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Protein supplements', 250)">Protein ₹250</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Travel', 100)">Travel ₹100</button>
+                </div>
+            </div>
+
+            <div class="money-main-layout mt-20">
+                <div class="money-forms-column">
+                    <!-- Add Transaction Form -->
+                    <div class="add-transaction-card card">
+                        <h3><i class="fas fa-plus-circle"></i> Add Transaction</h3>
+                        <form id="transaction-form">
+                            <div class="form-group">
+                                <label for="trans-date">Date</label>
+                                <input type="date" id="trans-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-type">Type</label>
+                                <select id="trans-type" required>
+                                    <option value="Expense">Expense</option>
+                                    <option value="Income">Income</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-amount">Amount (₹)</label>
+                                <input type="number" id="trans-amount" min="1" required placeholder="Enter amount">
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-category">Category</label>
+                                <select id="trans-category" required>
+                                    <option value="Mess">Mess</option>
+                                    <option value="Diet">Diet (milk, fruits, eggs)</option>
+                                    <option value="Protein supplements">Protein supplements</option>
+                                    <option value="Gym">Gym</option>
+                                    <option value="Snacks">Snacks</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Hostel Fees">Hostel Fees</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Stationery">Stationery</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-mode">Payment Mode</label>
+                                <select id="trans-mode" required>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Bank">Bank</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-notes">Notes (Optional)</label>
+                                <textarea id="trans-notes" rows="2" placeholder="Short note..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary block">Add Transaction</button>
+                        </form>
+                    </div>
+
+                    <!-- Monthly Report Summary -->
+                    <div class="monthly-report-card card mt-20">
+                        <div class="section-header">
+                            <h3><i class="fas fa-file-invoice-dollar"></i> Monthly Report</h3>
+                            <select id="report-month-selector" class="small-select"></select>
+                        </div>
+                        <div class="report-stats">
+                            <div class="report-item"><span>Total Income:</span> <strong id="report-income">₹0</strong></div>
+                            <div class="report-item"><span>Total Expense:</span> <strong id="report-expense" class="text-danger">₹0</strong></div>
+                            <div class="report-item"><span>Net Savings:</span> <strong id="report-savings" class="text-success">₹0</strong></div>
+                            <div class="report-item"><span>Top Category:</span> <strong id="report-top-category">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="money-history-column">
+                    <!-- History Table -->
+                    <div class="history-card card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-history"></i> Transaction History</h3>
+                            <div class="history-filters">
+                                <input type="text" id="money-search" placeholder="Search notes..." class="search-input">
+                                <select id="filter-month" class="filter-select">
+                                    <option value="all">All Months</option>
+                                </select>
+                                <select id="filter-category" class="filter-select">
+                                    <option value="all">All Categories</option>
+                                    <option value="Mess">Mess</option>
+                                    <option value="Diet">Diet</option>
+                                    <option value="Protein supplements">Protein</option>
+                                    <option value="Gym">Gym</option>
+                                    <option value="Snacks">Snacks</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Hostel Fees">Hostel Fees</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Stationery">Stationery</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <select id="filter-type" class="filter-select">
+                                    <option value="all">All Types</option>
+                                    <option value="Income">Income</option>
+                                    <option value="Expense">Expense</option>
+                                </select>
+                                <button id="sort-date-btn" class="btn-icon" title="Sort by Date"><i class="fas fa-sort-amount-down"></i></button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Category</th>
+                                        <th>Mode</th>
+                                        <th>Notes</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transaction-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="money-charts-grid mt-20">
+                        <div class="chart-card card">
+                            <h3>Category-wise Expense</h3>
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="expense-pie-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card card">
+                            <h3>Monthly Spending (Last 6 Months)</h3>
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="spending-bar-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add New</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamic form content -->
+            </div>
+        </div>
+    </div>
+
+    <audio id="notification-sound" preload="auto">
+        <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+    </audio>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Student Tracker</p>
+            <div class="footer-actions">
+                <button id="export-btn" class="btn-text small"><i class="fas fa-download"></i> Export Data</button>
+                <button id="import-btn" class="btn-text small"><i class="fas fa-upload"></i> Import Data</button>
+                <input type="file" id="import-file" style="display: none;">
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
