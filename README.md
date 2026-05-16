@@ -31,16 +31,6 @@ A modern, responsive personal productivity dashboard to track tasks, coding prog
 2.  Open `index.html` in any modern web browser.
 3.  That's it! No build tools or servers required.
 
-## Hosting on GitHub Pages
-
-1.  Create a new repository on GitHub (e.g., `productivity-dashboard`).
-2.  Upload `index.html`, `style.css`, and `script.js` to the repository.
-3.  Go to the **Settings** tab of your repository.
-4.  In the left sidebar, click on **Pages**.
-5.  Under **Build and deployment**, set the Source to **Deploy from a branch**.
-6.  Select the `main` branch and `/ (root)` folder, then click **Save**.
-7.  Wait a few minutes, and GitHub will provide you with a URL (e.g., `https://yourusername.github.io/productivity-dashboard/`) where your website is live!
-
 ## License
 
 MIT License - feel free to customize and use it for your own productivity journey!
