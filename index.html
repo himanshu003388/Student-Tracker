@@ -230,12 +230,76 @@
                         <tbody id="habits-table-body"></tbody>
                     </table>
                 </div>
+            </div>
 
-                <div class="habits-graph-wrap">
-                    <div class="chart-card card habits-graph-card" style="padding: 1rem;">
-                        <h3 class="habits-graph-title"><i class="fas fa-chart-line"></i> Habit Progress</h3>
-                        <div class="chart-container habits-chart-container">
-                            <canvas id="habits-chart"></canvas>
+            <!-- Habit Progress Card -->
+            <div class="chart-card card habits-graph-card mt-20">
+                <h3 class="habits-graph-title" style="margin-bottom: 1.25rem;"><i class="fas fa-chart-line"></i> Habit Progress</h3>
+                <div class="chart-container habits-chart-container">
+                    <canvas id="habits-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Targets & Circle Analytics Section -->
+            <div class="targets-analytics-wrap">
+                <div class="targets-container">
+                    <!-- Weekly Targets Card -->
+                    <div class="targets-card card">
+                        <div class="section-header" style="margin-bottom: 1.25rem;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-week" style="color: var(--weekly-color); margin-right: 0.5rem;"></i>Weekly Targets</h3>
+                            <button id="add-weekly-target-btn" class="btn-primary small" title="Add Weekly Target"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <ul id="weekly-targets-list" class="task-list targets-checklist" style="margin: 0; padding: 0;">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+
+                    <!-- Monthly Targets Card -->
+                    <div class="targets-card card">
+                        <div class="section-header" style="margin-bottom: 1.25rem;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-alt" style="color: var(--monthly-color); margin-right: 0.5rem;"></i>Monthly Targets</h3>
+                            <button id="add-monthly-target-btn" class="btn-primary small" title="Add Monthly Target"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <ul id="monthly-targets-list" class="task-list targets-checklist" style="margin: 0; padding: 0;">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Circular Analytics Card -->
+                <div class="analytics-card card">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem;"><i class="fas fa-chart-pie" style="margin-right: 0.5rem;"></i>Target Progress</h3>
+                    <div class="circular-progress-container">
+                        <div class="svg-ring-wrap">
+                            <svg width="180" height="180" viewBox="0 0 180 180" class="concentric-rings">
+                                <!-- Background rings -->
+                                <circle class="ring-bg outer-ring-bg" cx="90" cy="90" r="70" stroke-width="10" fill="transparent" />
+                                <circle class="ring-bg inner-ring-bg" cx="90" cy="90" r="48" stroke-width="10" fill="transparent" />
+                                
+                                <!-- Progress rings -->
+                                <circle class="ring-progress outer-ring" id="weekly-progress-ring" cx="90" cy="90" r="70" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="439.82" stroke-dashoffset="439.82" stroke-linecap="round" />
+                                <circle class="ring-progress inner-ring" id="monthly-progress-ring" cx="90" cy="90" r="48" stroke-width="10" fill="transparent"
+                                        stroke-dasharray="301.59" stroke-dashoffset="301.59" stroke-linecap="round" />
+                            </svg>
+                            <div class="ring-center-text">
+                                <div class="ring-percent-item weekly-txt">
+                                    <span class="dot weekly-dot"></span>W: <strong id="weekly-ring-percent">0%</strong>
+                                </div>
+                                <div class="ring-percent-item monthly-txt">
+                                    <span class="dot monthly-dot"></span>M: <strong id="monthly-ring-percent">0%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress-legend">
+                            <div class="legend-item">
+                                <span class="legend-color weekly-color-bg"></span>
+                                <span>Weekly Targets</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color monthly-color-bg"></span>
+                                <span>Monthly Targets</span>
+                            </div>
                         </div>
                     </div>
                 </div>

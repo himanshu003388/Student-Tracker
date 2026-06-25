@@ -8,6 +8,8 @@ const DEFAULT_STATE = {
     ],
     tasks: [],
     habits: [],
+    weeklyTargets: [],
+    monthlyTargets: [],
     habitStreak: 0,
     lastHabitUpdate: null,
     notes: [
@@ -175,6 +177,10 @@ function renderAll() {
 
     initHabitsChart();
     updateHabitGraph();
+
+    renderWeeklyTargets();
+    renderMonthlyTargets();
+    updateTargetCircularProgress();
 }
 
 function initTheme() {
@@ -905,6 +911,183 @@ function updateHabitStreak() {
     appState.habitStreak = streak;
 }
 
+/* Weekly & Monthly Targets and Concentric Progress Rings Logic */
+
+function renderWeeklyTargets() {
+    const list = document.getElementById('weekly-targets-list');
+    if (!list) return;
+
+    if (!appState.weeklyTargets || appState.weeklyTargets.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-calendar-week" style="color: var(--weekly-color);"></i>
+                <p>No weekly targets set.<br>Click the "+" button to add one!</p>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = appState.weeklyTargets.map(target => `
+        <li class="task-item ${target.completed ? 'completed' : ''}">
+            <input type="checkbox" ${target.completed ? 'checked' : ''} onchange="toggleWeeklyTarget(${target.id})">
+            <span>${escapeHtml(target.text)}</span>
+            <button class="delete-task" onclick="deleteWeeklyTarget(${target.id})" title="Delete Target"><i class="fas fa-trash"></i></button>
+        </li>
+    `).join('');
+}
+
+function renderMonthlyTargets() {
+    const list = document.getElementById('monthly-targets-list');
+    if (!list) return;
+
+    if (!appState.monthlyTargets || appState.monthlyTargets.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-calendar-alt" style="color: var(--monthly-color);"></i>
+                <p>No monthly targets set.<br>Click the "+" button to add one!</p>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = appState.monthlyTargets.map(target => `
+        <li class="task-item ${target.completed ? 'completed' : ''}">
+            <input type="checkbox" ${target.completed ? 'checked' : ''} onchange="toggleMonthlyTarget(${target.id})">
+            <span>${escapeHtml(target.text)}</span>
+            <button class="delete-task" onclick="deleteMonthlyTarget(${target.id})" title="Delete Target"><i class="fas fa-trash"></i></button>
+        </li>
+    `).join('');
+}
+
+window.toggleWeeklyTarget = (id) => {
+    const target = appState.weeklyTargets.find(t => t.id === id);
+    if (target) {
+        target.completed = !target.completed;
+        saveState();
+        renderWeeklyTargets();
+        updateTargetCircularProgress();
+    }
+};
+
+window.deleteWeeklyTarget = (id) => {
+    appState.weeklyTargets = appState.weeklyTargets.filter(t => t.id !== id);
+    saveState();
+    renderWeeklyTargets();
+    updateTargetCircularProgress();
+};
+
+window.toggleMonthlyTarget = (id) => {
+    const target = appState.monthlyTargets.find(t => t.id === id);
+    if (target) {
+        target.completed = !target.completed;
+        saveState();
+        renderMonthlyTargets();
+        updateTargetCircularProgress();
+    }
+};
+
+window.deleteMonthlyTarget = (id) => {
+    appState.monthlyTargets = appState.monthlyTargets.filter(t => t.id !== id);
+    saveState();
+    renderMonthlyTargets();
+    updateTargetCircularProgress();
+};
+
+function updateTargetCircularProgress() {
+    const weeklyRing = document.getElementById('weekly-progress-ring');
+    const monthlyRing = document.getElementById('monthly-progress-ring');
+    const weeklyPercentText = document.getElementById('weekly-ring-percent');
+    const monthlyPercentText = document.getElementById('monthly-ring-percent');
+
+    // Circumferences
+    const weeklyCircumference = 439.82; // 2 * pi * 70
+    const monthlyCircumference = 301.59; // 2 * pi * 48
+
+    // Weekly progress calculation
+    const weeklyTotal = appState.weeklyTargets ? appState.weeklyTargets.length : 0;
+    const weeklyCompleted = appState.weeklyTargets ? appState.weeklyTargets.filter(t => t.completed).length : 0;
+    const weeklyPercent = weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 0;
+
+    // Monthly progress calculation
+    const monthlyTotal = appState.monthlyTargets ? appState.monthlyTargets.length : 0;
+    const monthlyCompleted = appState.monthlyTargets ? appState.monthlyTargets.filter(t => t.completed).length : 0;
+    const monthlyPercent = monthlyTotal > 0 ? Math.round((monthlyCompleted / monthlyTotal) * 100) : 0;
+
+    // Update Text labels
+    if (weeklyPercentText) weeklyPercentText.textContent = `${weeklyPercent}%`;
+    if (monthlyPercentText) monthlyPercentText.textContent = `${monthlyPercent}%`;
+
+    // Update SVG offsets
+    if (weeklyRing) {
+        const weeklyOffset = weeklyCircumference - (weeklyPercent / 100) * weeklyCircumference;
+        weeklyRing.style.strokeDashoffset = weeklyOffset;
+    }
+    if (monthlyRing) {
+        const monthlyOffset = monthlyCircumference - (monthlyPercent / 100) * monthlyCircumference;
+        monthlyRing.style.strokeDashoffset = monthlyOffset;
+    }
+}
+
+// Target creation listeners
+function initTargetsListeners() {
+    const addWeeklyBtn = document.getElementById('add-weekly-target-btn');
+    const addMonthlyBtn = document.getElementById('add-monthly-target-btn');
+
+    if (addWeeklyBtn) {
+        addWeeklyBtn.addEventListener('click', () => {
+            showModal('Add Weekly Target', `
+                <form id="add-weekly-target-form">
+                    <div class="form-group">
+                        <label>Weekly Target Description</label>
+                        <input type="text" id="weekly-target-input" required placeholder="e.g. Complete math module 3">
+                    </div>
+                    <button type="submit" class="btn-primary block">Add Target</button>
+                </form>
+            `);
+
+            document.getElementById('add-weekly-target-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = document.getElementById('weekly-target-input').value.trim();
+                if (text) {
+                    if (!appState.weeklyTargets) appState.weeklyTargets = [];
+                    appState.weeklyTargets.push({ id: Date.now(), text, completed: false });
+                    saveState();
+                    renderWeeklyTargets();
+                    updateTargetCircularProgress();
+                    closeModal();
+                }
+            });
+        });
+    }
+
+    if (addMonthlyBtn) {
+        addMonthlyBtn.addEventListener('click', () => {
+            showModal('Add Monthly Target', `
+                <form id="add-monthly-target-form">
+                    <div class="form-group">
+                        <label>Monthly Target Description</label>
+                        <input type="text" id="monthly-target-input" required placeholder="e.g. Code 20 projects or read 2 books">
+                    </div>
+                    <button type="submit" class="btn-primary block">Add Target</button>
+                </form>
+            `);
+
+            document.getElementById('add-monthly-target-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = document.getElementById('monthly-target-input').value.trim();
+                if (text) {
+                    if (!appState.monthlyTargets) appState.monthlyTargets = [];
+                    appState.monthlyTargets.push({ id: Date.now(), text, completed: false });
+                    saveState();
+                    renderMonthlyTargets();
+                    updateTargetCircularProgress();
+                    closeModal();
+                }
+            });
+        });
+    }
+}
+
 if (elements.addHabitBtn) {
     elements.addHabitBtn.addEventListener('click', () => {
         showModal('Add Habit', `
@@ -1244,6 +1427,30 @@ function sanitizeAppState(data) {
                     history: cleanHistory
                 };
             });
+    }
+
+    if (Array.isArray(data.weeklyTargets)) {
+        cleanState.weeklyTargets = data.weeklyTargets
+            .filter(t => t && typeof t === 'object' && t.text)
+            .map(t => ({
+                id: Number(t.id) || Date.now(),
+                text: String(t.text).trim(),
+                completed: Boolean(t.completed)
+            }));
+    } else {
+        cleanState.weeklyTargets = [];
+    }
+
+    if (Array.isArray(data.monthlyTargets)) {
+        cleanState.monthlyTargets = data.monthlyTargets
+            .filter(t => t && typeof t === 'object' && t.text)
+            .map(t => ({
+                id: Number(t.id) || Date.now(),
+                text: String(t.text).trim(),
+                completed: Boolean(t.completed)
+            }));
+    } else {
+        cleanState.monthlyTargets = [];
     }
 
     cleanState.habitStreak = Math.max(0, Number(data.habitStreak) || 0);
@@ -1976,6 +2183,7 @@ function initEventListeners() {
 
     initMoneyTracker();
     initPomodoro();
+    initTargetsListeners();
 }
 
 
