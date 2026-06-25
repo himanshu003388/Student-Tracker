@@ -20,7 +20,7 @@ An elegant workspace to manage daily tasks, track habits, log finances, and stay
 
 ### 🏠 Interactive Dashboard
 *   **Live Clock & Weather-ready Widget:** Keeps you updated on the current date and time.
-*   **Daily Tasks Workspace:** Easily add, edit, search, and filter your to-dos. Supports interactive **Drag-and-Drop** reordering to prioritize tasks.
+*   **Daily Tasks Workspace:** Easily add, edit, and filter your to-dos. Supports interactive **Drag-and-Drop** reordering to prioritize tasks.
 *   **Quick Links Portal:** Fully customizable bookmark dashboard. Change URLs, add icons, and sort via **Drag-and-Drop**.
 *   **Pomodoro Focus Timer:** Beautiful circular SVG countdown with custom time modes (Focus, Short Break, Long Break) and interactive audio alerts.
 *   **Rich Notes & Snippets:** A responsive card-based notepad with dynamic search and instant filtering.

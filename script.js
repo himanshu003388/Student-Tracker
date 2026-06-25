@@ -692,19 +692,13 @@ function renderTasks() {
     if (!elements.taskList) return;
     const filterBtn = document.querySelector('.filter-btn.active');
     const filter = filterBtn ? filterBtn.dataset.filter : 'all';
-    const taskSearch = document.getElementById('task-search');
-    const searchQuery = taskSearch ? taskSearch.value.toLowerCase() : '';
 
     let filteredTasks = appState.tasks;
     if (filter === 'pending') filteredTasks = appState.tasks.filter(t => !t.completed);
     if (filter === 'completed') filteredTasks = appState.tasks.filter(t => t.completed);
 
-    if (searchQuery) {
-        filteredTasks = filteredTasks.filter(t => t.text.toLowerCase().includes(searchQuery));
-    }
-
     // Only allow drag reorder when showing the full unfiltered list
-    const isFiltered = filter !== 'all' || searchQuery !== '';
+    const isFiltered = filter !== 'all';
 
     elements.taskList.innerHTML = filteredTasks.map(task => `
         <li class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}" ${!isFiltered ? 'draggable="true"' : ''}>
@@ -716,11 +710,6 @@ function renderTasks() {
     `).join('');
 
     if (!isFiltered) initTasksDragAndDrop();
-}
-
-const taskSearch = document.getElementById('task-search');
-if (taskSearch) {
-    taskSearch.addEventListener('input', renderTasks);
 }
 
 if (elements.addTaskBtn) {
