@@ -663,7 +663,7 @@ td {
     align-items: flex-start;
     gap: 1.25rem;
   }
-  
+
   .quote-box {
     border-left: none;
     border-top: 1px solid var(--hairline);
@@ -891,6 +891,7 @@ td {
     opacity: 0;
     transform: scale(0.96) translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -1190,8 +1191,15 @@ td {
 }
 
 @keyframes dropdownIn {
-  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .link-menu-dropdown.show {
@@ -1452,10 +1460,12 @@ td {
 }
 
 .habits-table-wrapper {
+  /* No negative margin — card has its own padding */
   overflow-x: auto;
   border-radius: var(--radius-sm);
   margin-bottom: 1.25rem;
 }
+
 
 .habits-table {
   width: 100%;
@@ -1898,6 +1908,7 @@ td {
 }
 
 @media (max-width: 1200px) {
+
   /* Rework dashboard from 2-col grid into single-column stack */
   .dashboard-grid-layout {
     display: grid;
@@ -1964,6 +1975,7 @@ td {
 }
 
 @media (max-width: 768px) {
+
   /* Quick Links: always-visible ⋮ button on mobile */
   .link-menu-btn {
     opacity: 1 !important;
@@ -2029,8 +2041,8 @@ td {
     opacity: 0;
     pointer-events: none;
     transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.25s ease,
-                padding 0.35s ease;
+      opacity 0.25s ease,
+      padding 0.35s ease;
   }
 
   .nav-links.mobile-open {
@@ -2108,12 +2120,14 @@ td {
   /* Hide less important columns in transaction table on mobile */
   .table-container table th:nth-child(5),
   .table-container table td:nth-child(5) {
-    display: none; /* hide Mode column */
+    display: none;
+    /* hide Mode column */
   }
 
   .table-container table th:nth-child(6),
   .table-container table td:nth-child(6) {
-    display: none; /* hide Notes column */
+    display: none;
+    /* hide Notes column */
   }
 
   h1 {
@@ -2163,7 +2177,7 @@ td {
     font-size: 1.25rem;
   }
 
-  section > .section-header {
+  section>.section-header {
     padding: 0 1rem;
   }
 
@@ -2279,25 +2293,25 @@ td {
     flex-wrap: wrap;
   }
 
-  .section-header > h2,
-  .section-header > h3 {
+  .section-header>h2,
+  .section-header>h3 {
     flex: 1 1 auto;
     min-width: 0;
   }
 
   /* \u2500\u2500 Habits section header \u2500\u2500 */
   /* Make title + actions wrap to two rows on mobile */
-  #habits > .section-header {
+  #habits>.section-header {
     flex-wrap: wrap;
     row-gap: 0.625rem;
   }
 
-  #habits > .section-header h2 {
+  #habits>.section-header h2 {
     flex: 1 1 100%;
     font-size: 1.1rem;
   }
 
-  #habits > .section-header .header-actions {
+  #habits>.section-header .header-actions {
     flex: 1 1 100%;
     justify-content: space-between;
     gap: 0.5rem;
@@ -2449,7 +2463,8 @@ td {
   }
 
   .quote-box i {
-    display: none; /* hide quote icon to save vertical space */
+    display: none;
+    /* hide quote icon to save vertical space */
   }
 
   .stats-progress-container {
@@ -2583,7 +2598,7 @@ td {
   }
 
   /* On 480px, section-header in top-level sections (not inside cards) should stack */
-  section > .section-header {
+  section>.section-header {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
@@ -2791,7 +2806,7 @@ td {
     gap: 0.5rem;
   }
 
-  .history-filters > * {
+  .history-filters>* {
     width: 100%;
   }
 
@@ -2881,15 +2896,15 @@ td {
   }
 
   /* Money section spacing fixes */
-  #money > .money-summary-grid {
+  #money>.money-summary-grid {
     padding: 0 0.75rem;
   }
 
-  #money > .quick-add-section {
+  #money>.quick-add-section {
     margin: 1rem 0.75rem 0;
   }
 
-  #money > .money-main-layout {
+  #money>.money-main-layout {
     padding: 0;
   }
 }
@@ -2917,7 +2932,8 @@ td {
   }
 
   .logo span {
-    display: none; /* show just the icon on very small screens */
+    display: none;
+    /* show just the icon on very small screens */
   }
 
   .nav-links {
@@ -3047,7 +3063,8 @@ td {
   stroke: var(--ink);
   stroke-width: 7px;
   stroke-linecap: round;
-  stroke-dasharray: 565.48; /* 2 * PI * 90 */
+  stroke-dasharray: 565.48;
+  /* 2 * PI * 90 */
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 0.3s linear;
 }
