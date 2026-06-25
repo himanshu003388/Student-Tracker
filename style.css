@@ -1067,6 +1067,57 @@ td {
   transform: translateY(-2px);
 }
 
+/* Drag handle — grip icon shown on hover */
+.link-drag-handle {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mute);
+  font-size: 0.75rem;
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 0.15s ease;
+  z-index: 3;
+  border-radius: var(--radius-sm);
+}
+
+.link-card:hover .link-drag-handle {
+  opacity: 0.5;
+}
+
+.link-drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--ink);
+  background: var(--canvas-soft-2);
+}
+
+.link-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Card being dragged */
+.link-card.link-dragging {
+  opacity: 0.4;
+  transform: scale(0.97);
+  border-style: dashed;
+  border-color: var(--link);
+  box-shadow: none;
+}
+
+/* Card being hovered over as a drop target */
+.link-card.link-drag-over {
+  border-color: var(--link);
+  background: color-mix(in srgb, var(--link) 8%, var(--canvas));
+  box-shadow: 0 0 0 2px var(--link), var(--shadow-elevated);
+  transform: scale(1.03);
+}
+
 .link-card-main {
   display: block;
   text-decoration: none;

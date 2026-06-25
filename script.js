@@ -315,7 +315,6 @@ function initClock() {
     setInterval(update, 1000);
     update();
 }
-
 function extractDomain(url) {
     try {
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
@@ -335,7 +334,8 @@ function renderLinks() {
                    onerror="this.style.display='none';this.parentElement.querySelector('.link-logo-fallback').style.display='block'" alt="">
                <i class="fas fa-globe link-logo-fallback" style="display:none"></i>`;
         return `
-            <div class="link-card" data-id="${link.id}">
+            <div class="link-card" data-id="${link.id}" draggable="true">
+                <div class="link-drag-handle" title="Hold to rearrange"><i class="fas fa-grip-dots-vertical"></i></div>
                 <button class="link-menu-btn" onclick="toggleLinkMenu(this, event)" title="More options"><i class="fas fa-ellipsis-v"></i></button>
                 <div class="link-menu-dropdown">
                     <button onclick="editLink(${link.id}, event)"><i class="fas fa-pen"></i> Edit</button>
@@ -352,6 +352,161 @@ function renderLinks() {
             </div>
         `;
     }).join('');
+    initLinksDragAndDrop();
+}
+
+function initLinksDragAndDrop() {
+    const grid = elements.linksGrid;
+    if (!grid) return;
+
+    let dragSrc = null;
+    let touchDragSrc = null;
+    let touchClone = null;
+    let touchStartX = 0, touchStartY = 0;
+    let longPressTimer = null;
+    let touchDragActive = false;
+
+    // --- Mouse / Desktop Drag & Drop ---
+    grid.querySelectorAll('.link-card').forEach(card => {
+        card.addEventListener('dragstart', e => {
+            dragSrc = card;
+            card.classList.add('link-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', card.dataset.id);
+        });
+
+        card.addEventListener('dragend', () => {
+            dragSrc = null;
+            card.classList.remove('link-dragging');
+            grid.querySelectorAll('.link-card').forEach(c => c.classList.remove('link-drag-over'));
+        });
+
+        card.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (card !== dragSrc) {
+                grid.querySelectorAll('.link-card').forEach(c => c.classList.remove('link-drag-over'));
+                card.classList.add('link-drag-over');
+            }
+        });
+
+        card.addEventListener('dragleave', () => {
+            card.classList.remove('link-drag-over');
+        });
+
+        card.addEventListener('drop', e => {
+            e.preventDefault();
+            card.classList.remove('link-drag-over');
+            if (!dragSrc || dragSrc === card) return;
+            reorderLinks(dragSrc.dataset.id, card.dataset.id);
+        });
+
+        // --- Touch / Mobile Long-press Drag ---
+        card.addEventListener('touchstart', e => {
+            if (e.touches.length !== 1) return;
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+
+            longPressTimer = setTimeout(() => {
+                touchDragActive = true;
+                touchDragSrc = card;
+                card.classList.add('link-dragging');
+
+                // Create a visual clone that follows the finger
+                touchClone = card.cloneNode(true);
+                const rect = card.getBoundingClientRect();
+                touchClone.style.cssText = `
+                    position: fixed;
+                    left: ${rect.left}px;
+                    top: ${rect.top}px;
+                    width: ${rect.width}px;
+                    opacity: 0.85;
+                    pointer-events: none;
+                    z-index: 9999;
+                    transform: scale(1.05) rotate(2deg);
+                    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+                    transition: transform 0.1s ease;
+                `;
+                document.body.appendChild(touchClone);
+
+                // Haptic feedback if available
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 400);
+        }, { passive: true });
+
+        card.addEventListener('touchmove', e => {
+            if (!touchDragActive) {
+                // Cancel long press if moved too much before threshold
+                const touch = e.touches[0];
+                const dx = Math.abs(touch.clientX - touchStartX);
+                const dy = Math.abs(touch.clientY - touchStartY);
+                if (dx > 8 || dy > 8) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                return;
+            }
+            e.preventDefault();
+            const touch = e.touches[0];
+
+            // Move clone
+            if (touchClone) {
+                const rect = touchDragSrc.getBoundingClientRect();
+                touchClone.style.left = `${touch.clientX - rect.width / 2}px`;
+                touchClone.style.top = `${touch.clientY - rect.height / 2}px`;
+            }
+
+            // Find card under finger
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetCard = el ? el.closest('.link-card') : null;
+            grid.querySelectorAll('.link-card').forEach(c => c.classList.remove('link-drag-over'));
+            if (targetCard && targetCard !== touchDragSrc) {
+                targetCard.classList.add('link-drag-over');
+            }
+        }, { passive: false });
+
+        card.addEventListener('touchend', e => {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+
+            if (!touchDragActive) return;
+            touchDragActive = false;
+
+            if (touchClone) {
+                touchClone.remove();
+                touchClone = null;
+            }
+
+            if (touchDragSrc) touchDragSrc.classList.remove('link-dragging');
+
+            const touch = e.changedTouches[0];
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetCard = el ? el.closest('.link-card') : null;
+
+            grid.querySelectorAll('.link-card').forEach(c => c.classList.remove('link-drag-over'));
+
+            if (targetCard && targetCard !== touchDragSrc) {
+                reorderLinks(touchDragSrc.dataset.id, targetCard.dataset.id);
+            }
+
+            touchDragSrc = null;
+        }, { passive: true });
+    });
+}
+
+function reorderLinks(srcId, targetId) {
+    const links = appState.links;
+    const srcIndex = links.findIndex(l => String(l.id) === String(srcId));
+    const targetIndex = links.findIndex(l => String(l.id) === String(targetId));
+    if (srcIndex === -1 || targetIndex === -1) return;
+
+    // Remove src and insert before/after target
+    const [moved] = links.splice(srcIndex, 1);
+    links.splice(targetIndex, 0, moved);
+
+    saveState();
+    renderLinks();
 }
 
 window.toggleLinkMenu = (btn, e) => {
