@@ -26,10 +26,11 @@ Track tasks, habits, money, and stay focused — all in one place, no backend re
 | Feature | Description |
 |---|---|
 | 🏠 **Dashboard** | Real-time clock, motivational quotes & daily stats overview |
-| ✅ **Task Tracker** | Daily to-do list with filters, search & persistent storage |
-| ⚡ **Quick Links** | One-click access to LeetCode, GitHub, GFG & custom URLs |
+| ✅ **Task Tracker** | Daily to-do list with drag-and-drop reordering, filters, search & persistent storage |
+| ⚡ **Quick Links** | Customize & drag-to-rearrange links to your favorite sites (LeetCode, GitHub, etc.) |
 | 🍅 **Pomodoro Timer** | Circular focus timer with work/break modes & sound alerts |
-| 📅 **Habit Tracker** | Monthly habit grid with streaks, charts & progress visualization |
+| 📅 **Habit Tracker** | Monthly calendar habit grid, streaks, daily completion charts, plus weekly/monthly target checklists |
+| 📊 **Target Analytics** | Dynamic concentric progress rings showing weekly and monthly target completion |
 | 💰 **Money Tracker** | Income/expense logging with category charts & monthly reports |
 | 📝 **Notes & Snippets** | Searchable notes for topics, interview prep & summaries |
 | 🌗 **Dark / Light Mode** | Seamless theme switching with zero flicker on load |
@@ -43,8 +44,8 @@ Track tasks, habits, money, and stay focused — all in one place, no backend re
 The main hub of your productivity. At a glance you get:
 - **Live Clock & Date** — always know the time
 - **Motivational Quote** — a fresh quote to keep you going
-- **Daily Tasks** — add, search, filter and check off your to-dos
-- **Quick Links** — customizable icon grid for your most-visited sites
+- **Daily Tasks** — add, search, filter, check off, and **drag-and-drop to reorder/prioritize** your to-dos
+- **Quick Links** — customizable icon grid with **drag-and-drop rearrangement** to organize your favorite sites
 - **Pomodoro Timer** — circular SVG countdown with Pomodoro, Short Break & Long Break modes
 - **Notes & Snippets** — a searchable card grid for all your learning notes
 
@@ -52,6 +53,8 @@ The main hub of your productivity. At a glance you get:
 - **Monthly Calendar Grid** — check off each habit for every day of the month
 - **🔥 Streak Counter** — watch your streak grow as you stay consistent
 - **Habit Progress Chart** — visualize how many habits you've completed per day
+- **🎯 Target Checklists** — track separate weekly and monthly habit targets below the graph
+- **⭕ Concentric Progress Rings** — beautiful dual-ring chart (inner/outer) showing weekly and monthly target completion rates
 
 ### 💰 Money Tracker
 - **6 Summary Cards** — Total Income, Total Expense, Balance, and This Month's stats
@@ -107,6 +110,7 @@ Student-Tracker-main/
 ├── index.html    # The entire app — single HTML file
 ├── style.css     # All styles (~60 KB) with theming system
 ├── script.js     # All logic (~80 KB) — modular & well-commented
+├── favicon.png   # Custom rocket icon favicon
 └── README.md     # You are here!
 ```
 
@@ -116,8 +120,10 @@ Student-Tracker-main/
 
 - **Zero-flicker theme** — theme is applied before the page paints using an inline script
 - **CSS Custom Properties** — entire color system is token-based for easy theming
-- **Responsive Layout** — works on both desktop and mobile screens
+- **Responsive Layout** — works on both desktop and mobile screens with auto-adjusting grid layouts
+- **Concentric SVG Rings** — dual-ring progress visualizer for weekly and monthly habit targets
 - **Circular Pomodoro SVG** — animated SVG progress ring for the focus timer
+- **Drag-and-Drop UX** — smooth, interactive sorting animations for daily tasks and quick links
 - **Smooth Animations** — micro-interactions on cards, buttons and transitions
 
 ---
