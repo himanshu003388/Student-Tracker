@@ -37,7 +37,8 @@ const DEFAULT_STATE = {
     moneyTracker: {
         transactions: [],
         filters: { month: 'all', category: 'all', type: 'all', search: '', sortOrder: 'desc' }
-    }
+    },
+    _notesSeeded: 'v1'
 };
 
 let appState = DEFAULT_STATE;
@@ -138,21 +139,24 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
     }
 
-    if (!appState.notes || appState.notes.length === 0) {
-        appState.notes = [
-            {
-                id: 1,
-                title: 'Welcome to Student Tracker! 🚀',
-                content: 'Use this workspace to organize your tasks, track habits, keep study notes, and manage your budget.\n\nClick the "+" button in the top right of this section to add your own notes.',
-                date: getLocalDateKey()
-            },
-            {
-                id: 2,
-                title: 'Quick Study Tips 💡',
-                content: '1. Use the Pomodoro technique to stay focused.\n2. Break big projects into daily tasks.\n3. Log your habits daily to keep your day streak alive!',
-                date: getLocalDateKey()
-            }
-        ];
+    if (appState._notesSeeded !== 'v1') {
+        if (!appState.notes || appState.notes.length === 0) {
+            appState.notes = [
+                {
+                    id: 1,
+                    title: 'Welcome to Student Tracker! 🚀',
+                    content: 'Use this workspace to organize your tasks, track habits, keep study notes, and manage your budget.\n\nClick the "+" button in the top right of this section to add your own notes.',
+                    date: getLocalDateKey()
+                },
+                {
+                    id: 2,
+                    title: 'Quick Study Tips 💡',
+                    content: '1. Use the Pomodoro technique to stay focused.\n2. Break big projects into daily tasks.\n3. Log your habits daily to keep your day streak alive!',
+                    date: getLocalDateKey()
+                }
+            ];
+        }
+        appState._notesSeeded = 'v1';
         saveState();
     }
 
@@ -1506,6 +1510,7 @@ function sanitizeAppState(data) {
 
     // Preserve the seeding flag so deleted default links don't reappear on refresh
     cleanState._linksSeeded = data._linksSeeded;
+    cleanState._notesSeeded = data._notesSeeded;
 
     return cleanState;
 }
