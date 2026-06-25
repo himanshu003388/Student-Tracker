@@ -1,18 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!-- Black rounded square background -->
-  <rect width="600" height="600" rx="80" ry="80" fill="#000000"/>
-
-  <!-- Rocket icon: white outline, tilted ~45°, matching the provided image -->
-  <g transform="translate(300,300) rotate(-45) translate(-130,-140)" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Rocket body (elongated oval/lens) -->
-    <path d="M130 30 C190 30, 240 75, 240 145 C240 215, 190 260, 130 260 C70 260, 20 215, 20 145 C20 75, 70 30, 130 30 Z"/>
-    <!-- Porthole/window -->
-    <circle cx="155" cy="120" r="32"/>
-    <!-- Left fin/booster -->
-    <path d="M50 210 C30 230, 10 270, 20 290 C40 285, 75 265, 90 240"/>
-    <!-- Right fin/booster -->
-    <path d="M210 210 C230 230, 250 270, 240 290 C220 285, 185 265, 170 240"/>
-    <!-- Exhaust nozzle / bottom detail -->
-    <path d="M90 255 C95 275, 110 285, 130 285 C150 285, 165 275, 170 255"/>
+  <rect width="512" height="512" rx="70" ry="70" fill="#000000"/>
+  <!-- Font Awesome 6 rocket icon - white, centered and scaled to fit -->
+  <g transform="translate(56, 56) scale(0.78)">
+    <path fill="white" d="M156.6 384.9L125.7 353.1L99.35 375.6C77.12 396.2 47.67 404.1 16.6 406.6L33.75 424C52.18 442.4 75.45 456.1 100.7 464.1L16.6 424.1C44.43 420.5 70.08 410.4 91.37 392.1L156.6 384.9zM108.8 343.8L138.9 374C149 384.1 164.8 387.8 178.6 382.8L310.6 334.8C330.3 327.6 347.3 314.1 359.1 296.8L498.2 47.93C513.4 23.13 509.4 .6401 506.8 0C504.2-.6401 476.9 3.592 453.1 20.85L204.1 159.7C186.6 171.6 174.1 189.6 167.1 208.4L119.1 342.4C114.9 356.2 118.7 371.7 128.8 381.8L108.8 343.8zM384 168C384 181.3 373.3 192 360 192C346.7 192 336 181.3 336 168C336 154.7 346.7 144 360 144C373.3 144 384 154.7 384 168z"/>
   </g>
 </svg>
