@@ -1,83 +1,83 @@
-/**
- * CS Student Productivity Dashboard - script.js
- */
-
-// --- STATE MANAGEMENT ---
 const DEFAULT_STATE = {
     theme: 'light',
-    links: [],
+    links: [
+        { id: 1, name: 'GitHub', url: 'https://github.com', icon: 'fab fa-github' },
+        { id: 2, name: 'LeetCode', url: 'https://leetcode.com', icon: 'fas fa-code' },
+        { id: 3, name: 'GeeksforGeeks', url: 'https://geeksforgeeks.org', icon: 'fas fa-laptop-code' },
+        { id: 4, name: 'LinkedIn', url: 'https://linkedin.com', icon: 'fab fa-linkedin' },
+        { id: 5, name: 'Stack Overflow', url: 'https://stackoverflow.com', icon: 'fab fa-stack-overflow' },
+        { id: 6, name: 'Codeforces', url: 'https://codeforces.com', icon: 'fas fa-trophy' },
+        { id: 7, name: 'HackerRank', url: 'https://hackerrank.com', icon: 'fab fa-hackerrank' },
+        { id: 8, name: 'CodeChef', url: 'https://codechef.com', icon: 'fas fa-utensils' },
+        { id: 9, name: 'YouTube', url: 'https://youtube.com', icon: 'fab fa-youtube' },
+        { id: 10, name: 'Dev.to', url: 'https://dev.to', icon: 'fab fa-dev' }
+    ],
     tasks: [],
-    codingLogs: [],
     habits: [],
     habitStreak: 0,
     lastHabitUpdate: null,
-    notes: [],
-    projects: [],
-    placements: [],
-    pomodoroSettings: { work: 25, shortBreak: 5, longBreak: 15 },
+    notes: [
+        {
+            id: 1,
+            title: 'Welcome to Student Tracker! 🚀',
+            content: 'Use this workspace to organize your tasks, track habits, keep study notes, and manage your budget.\n\nClick the "+" button in the top right of this section to add your own notes.',
+            date: new Date().toLocaleDateString()
+        },
+        {
+            id: 2,
+            title: 'Quick Study Tips 💡',
+            content: '1. Use the Pomodoro technique to stay focused.\n2. Break big projects into daily tasks.\n3. Log your habits daily to keep your day streak alive!',
+            date: new Date().toLocaleDateString()
+        }
+    ],
     stats: { focusTimeMinutes: 0 },
-    weeklyTargets: [],
-    monthlyTargets: [],
-    dashboardNote: '',
+    pomodoro: {
+        workDuration: 25,
+        shortDuration: 5,
+        longDuration: 15,
+        completedSessions: 0,
+        isMuted: false
+    },
     moneyTracker: {
         transactions: [],
         filters: { month: 'all', category: 'all', type: 'all', search: '', sortOrder: 'desc' }
     }
 };
 
-let appState = JSON.parse(localStorage.getItem('cs_dashboard_data')) || DEFAULT_STATE;
-
-// Migration: Ensure new properties exist
-if (!appState.weeklyTargets) appState.weeklyTargets = DEFAULT_STATE.weeklyTargets;
-if (!appState.monthlyTargets) appState.monthlyTargets = DEFAULT_STATE.monthlyTargets;
-if (typeof appState.dashboardNote === 'undefined') appState.dashboardNote = DEFAULT_STATE.dashboardNote;
-if (!appState.moneyTracker) appState.moneyTracker = DEFAULT_STATE.moneyTracker;
-if (!appState.moneyTracker.transactions) appState.moneyTracker.transactions = [];
-if (!appState.moneyTracker.filters) appState.moneyTracker.filters = DEFAULT_STATE.moneyTracker.filters;
-
-// Migration check for old habit structure
-if (appState.habits && appState.habits.length > 0 && typeof appState.habits[0].completed !== 'undefined') {
-    appState.habits = appState.habits.map(h => ({
-        id: h.id,
-        name: h.name,
-        history: h.completed ? { [new Date().toLocaleDateString()]: true } : {}
-    }));
+let appState = DEFAULT_STATE;
+try {
+    const rawState = localStorage.getItem('cs_dashboard_data');
+    if (rawState) {
+        appState = sanitizeAppState(JSON.parse(rawState));
+    }
+} catch (e) {
+    console.error("Failed to load state from localStorage", e);
 }
+
+
 
 function saveState() {
     localStorage.setItem('cs_dashboard_data', JSON.stringify(appState));
     updateStats();
-    if (typeof updateHabitProgressChart === 'function') updateHabitProgressChart();
 }
 
-// --- DOM ELEMENTS ---
 const elements = {
     sections: document.querySelectorAll('main > section'),
     navLinks: document.querySelectorAll('.nav-links a'),
     themeToggle: document.getElementById('theme-toggle'),
     currentTime: document.getElementById('current-time'),
     currentDate: document.getElementById('current-date'),
-    quoteText: document.getElementById('quote-text'),
-    quoteAuthor: document.getElementById('quote-author'),
     linksGrid: document.getElementById('links-grid'),
     taskList: document.getElementById('task-list'),
     taskInput: document.getElementById('task-input'),
     addTaskBtn: document.getElementById('add-task-btn'),
-    codingLogForm: document.getElementById('coding-log-form'),
-    codingLogBody: document.getElementById('coding-log-body'),
     habitsTableHead: document.getElementById('habits-table-head'),
     habitsTableBody: document.getElementById('habits-table-body'),
     habitMonthName: document.getElementById('habit-month-name'),
     addHabitBtn: document.getElementById('add-habit-btn'),
     resetHabitsBtn: document.getElementById('reset-habits-btn'),
     habitStreakDisplay: document.getElementById('habit-streak-display'),
-    timerDisplay: document.getElementById('timer-display'),
-    pomoStartBtn: document.getElementById('pomo-start-btn'),
-    pomoResetBtn: document.getElementById('pomo-reset-btn'),
-    pomoModeBtns: document.querySelectorAll('.pomo-mode-btn'),
     notesGrid: document.getElementById('notes-grid'),
-    projectsGrid: document.getElementById('projects-grid'),
-    placementBody: document.getElementById('placement-body'),
     modalOverlay: document.getElementById('modal-overlay'),
     modalBody: document.getElementById('modal-body'),
     modalTitle: document.getElementById('modal-title'),
@@ -86,16 +86,8 @@ const elements = {
     importBtn: document.getElementById('import-btn'),
     importFile: document.getElementById('import-file'),
     statTasksDone: document.getElementById('stat-tasks-done'),
-    statCodingToday: document.getElementById('stat-coding-today'),
     statStreak: document.getElementById('stat-streak'),
     statFocusTime: document.getElementById('stat-focus-time'),
-    weeklyTargetsList: document.getElementById('weekly-targets-list'),
-    monthlyTargetsList: document.getElementById('monthly-targets-list'),
-    addWeeklyTargetBtn: document.getElementById('add-weekly-target-btn'),
-    addMonthlyTargetBtn: document.getElementById('add-monthly-target-btn'),
-    dashboardNote: document.getElementById('dashboard-note'),
-    
-    // Money Tracker Elements
     moneyTotalIncome: document.getElementById('money-total-income'),
     moneyTotalExpense: document.getElementById('money-total-expense'),
     moneyCurrentBalance: document.getElementById('money-current-balance'),
@@ -115,79 +107,132 @@ const elements = {
     reportSavings: document.getElementById('report-savings'),
     reportTopCategory: document.getElementById('report-top-category'),
     moneyExportBtn: document.getElementById('money-export-btn'),
-    moneyImportBtn: document.getElementById('money-import-btn')
+    moneyImportBtn: document.getElementById('money-import-btn'),
+
+    // Pomodoro Elements
+    pomodoroTime: document.getElementById('pomodoro-time'),
+    pomodoroLabel: document.getElementById('pomodoro-label'),
+    pomodoroPlayBtn: document.getElementById('pomodoro-play-btn'),
+    pomodoroResetBtn: document.getElementById('pomodoro-reset-btn'),
+    pomodoroMuteBtn: document.getElementById('pomodoro-mute-btn'),
+    pomodoroSettingsBtn: document.getElementById('pomodoro-settings-btn'),
+    pomodoroSaveSettings: document.getElementById('pomodoro-save-settings'),
+    pomodoroCloseSettings: document.getElementById('pomodoro-close-settings'),
+    pomodoroCompletedSessions: document.getElementById('pomodoro-completed-sessions'),
+    pomodoroTotalFocusTime: document.getElementById('pomodoro-total-focus-time'),
+    pomodoroCardTime: document.getElementById('pomodoro-card-time'),
+    pomodoroCardDate: document.getElementById('pomodoro-card-date')
 };
 
-// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Seed default links if not done yet
+    if (!appState._linksSeeded) {
+        const existingNames = new Set(appState.links.map(l => l.name));
+        DEFAULT_STATE.links.forEach(link => {
+            if (!existingNames.has(link.name)) {
+                const maxId = appState.links.reduce((max, l) => Math.max(max, l.id), 0);
+                appState.links.push({ ...link, id: maxId + 1 });
+            }
+        });
+        appState._linksSeeded = true;
+        saveState();
+    }
+
+    if (!appState.notes || appState.notes.length === 0) {
+        appState.notes = [
+            {
+                id: 1,
+                title: 'Welcome to Student Tracker! 🚀',
+                content: 'Use this workspace to organize your tasks, track habits, keep study notes, and manage your budget.\n\nClick the "+" button in the top right of this section to add your own notes.',
+                date: getLocalDateKey()
+            },
+            {
+                id: 2,
+                title: 'Quick Study Tips 💡',
+                content: '1. Use the Pomodoro technique to stay focused.\n2. Break big projects into daily tasks.\n3. Log your habits daily to keep your day streak alive!',
+                date: getLocalDateKey()
+            }
+        ];
+        saveState();
+    }
+
+    // Migrate old locale date strings to YYYY-MM-DD
+    migrateLocaleDates();
+
     initTheme();
     initClock();
     initQuotes();
     initNavigation();
     renderAll();
-    initCharts();
     initEventListeners();
-    initDashboardNote();
 });
 
 function renderAll() {
     updateHabitStreak();
     renderLinks();
     renderTasks();
-    renderCodingLogs();
     renderHabits();
-    renderTargets();
     renderNotes();
-    renderProjects();
-    renderPlacements();
-    renderMoneyTracker();
-    renderDashboardNote();
     updateStats();
+
+    initHabitsChart();
+    updateHabitGraph();
 }
 
-function renderDashboardNote() {
-    if (elements.dashboardNote) {
-        elements.dashboardNote.value = appState.dashboardNote || '';
-    }
-}
-
-function initDashboardNote() {
-    if (elements.dashboardNote) {
-        elements.dashboardNote.addEventListener('input', (e) => {
-            appState.dashboardNote = e.target.value;
-            saveState();
-        });
-    }
-}
-
-// --- THEME ---
 function initTheme() {
     document.body.className = appState.theme === 'dark' ? 'dark-mode' : 'light-mode';
-    if(elements.themeToggle) {
-        elements.themeToggle.innerHTML = appState.theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    const meta = document.getElementById('theme-color-meta');
+    if (meta) meta.content = appState.theme === 'dark' ? '#0a0a0a' : '#fafafa';
+    if (elements.themeToggle) {
+        elements.themeToggle.classList.toggle('dark', appState.theme === 'dark');
     }
 }
 
-if(elements.themeToggle) {
+function updateChartTheme() {
+    const textColor = appState.theme === 'dark' ? '#f5f5f5' : '#171717';
+    const gridColor = appState.theme === 'dark' ? '#2a2a2a' : '#ebebeb';
+    const tickColor = appState.theme === 'dark' ? '#6b6b6b' : '#888888';
+
+    if (expensePieChart) {
+        expensePieChart.options.plugins.legend.labels.color = textColor;
+        expensePieChart.update();
+    }
+    if (spendingBarChart) {
+        spendingBarChart.options.plugins.legend.labels.color = textColor;
+        spendingBarChart.options.scales.y.grid.color = gridColor;
+        spendingBarChart.options.scales.y.ticks.color = tickColor;
+        spendingBarChart.options.scales.x.ticks.color = tickColor;
+        spendingBarChart.update();
+    }
+}
+
+if (elements.themeToggle) {
     elements.themeToggle.addEventListener('click', () => {
         appState.theme = appState.theme === 'light' ? 'dark' : 'light';
         initTheme();
         saveState();
+        updateChartTheme();
+
+        // Keep habits checklist + chart in sync with theme
+        updateHabitGraph();
+    });
+    elements.themeToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            elements.themeToggle.click();
+        }
     });
 }
 
-// --- NAVIGATION ---
 function initNavigation() {
     elements.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const target = link.getAttribute('data-section');
-            
-            // Update Active Link
+
             elements.navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-            
-            // Show Section
+
             elements.sections.forEach(section => {
                 if (section.id === target) {
                     section.classList.remove('hidden');
@@ -198,64 +243,211 @@ function initNavigation() {
                 }
             });
 
-            // Fix Chart.js sizing issues when a container goes from display:none to visible
             setTimeout(() => {
-                if (target === 'dashboard' && typeof dashboardChart !== 'undefined' && dashboardChart) dashboardChart.resize();
-                if (target === 'coding' && typeof codingChart !== 'undefined' && codingChart) codingChart.resize();
-                if (target === 'habits' && typeof habitProgressChart !== 'undefined' && habitProgressChart) habitProgressChart.resize();
                 if (target === 'money') {
                     if (typeof expensePieChart !== 'undefined' && expensePieChart) expensePieChart.resize();
                     if (typeof spendingBarChart !== 'undefined' && spendingBarChart) spendingBarChart.resize();
                 }
             }, 10);
 
-            // Close mobile menu if open
             const navLinksContainer = document.querySelector('.nav-links');
-            if (window.innerWidth <= 768 && navLinksContainer.style.display === 'flex') {
-                navLinksContainer.style.display = 'none';
+            const mobileBtn = document.querySelector('.mobile-menu-btn');
+            if (window.innerWidth <= 768 && navLinksContainer.classList.contains('mobile-open')) {
+                navLinksContainer.classList.remove('mobile-open');
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                    mobileBtn.classList.remove('open');
+                }
             }
         });
     });
+
+    const logoLink = document.querySelector('.logo');
+    if (logoLink) {
+        logoLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            const dashboardLink = document.querySelector('.nav-links a[data-section="dashboard"]');
+            if (dashboardLink) {
+                dashboardLink.click();
+            }
+        });
+    }
+}
+const MOTIVATIONAL_QUOTES = [
+    "Believe you can and you're halfway there.",
+    "Act as if what you do makes a difference. It does.",
+    "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+    "Never bend your head. Always hold it high. Look the world straight in the eye.",
+    "What you get by achieving your goals is not as important as what you become by achieving your goals.",
+    "It always seems impossible until it's done.",
+    "Your talent determines what you can do. Your motivation determines how much you are willing to do.",
+    "Start where you are. Use what you have. Do what you can.",
+    "Don't watch the clock; do what it does. Keep going.",
+    "The secret of getting ahead is getting started."
+];
+
+function initQuotes() {
+    const quoteEl = document.getElementById('motivational-quote');
+    if (quoteEl) {
+        const randomIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length);
+        quoteEl.textContent = `"${MOTIVATIONAL_QUOTES[randomIndex]}"`;
+    }
 }
 
-// --- CLOCK & QUOTES ---
 function initClock() {
     const update = () => {
         const now = new Date();
-        if(elements.currentTime) elements.currentTime.textContent = now.toLocaleTimeString();
-        if(elements.currentDate) elements.currentDate.textContent = now.toLocaleDateString(undefined, { 
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        if (elements.currentTime) elements.currentTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (elements.currentDate) elements.currentDate.textContent = now.toLocaleDateString(undefined, {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
+
+        // Update Pomodoro Card Clock
+        if (elements.pomodoroCardTime) {
+            elements.pomodoroCardTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        if (elements.pomodoroCardDate) {
+            elements.pomodoroCardDate.textContent = now.toLocaleDateString(undefined, {
+                weekday: 'short', day: 'numeric', month: 'short'
+            });
+        }
     };
     setInterval(update, 1000);
     update();
 }
 
-const QUOTES = [
-    { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
-    { text: "Code is like humor. When you have to explain it, it’s bad.", author: "Cory House" },
-    { text: "Optimism is a happiness magnet. If you stay positive, good things will happen.", author: "Mary Lou Retton" },
-    { text: "Consistency is more important than perfection.", author: "Unknown" },
-    { text: "The path to success is to take massive, determined actions.", author: "Tony Robbins" }
-];
-
-function initQuotes() {
-    const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-    if(elements.quoteText) elements.quoteText.textContent = `"${quote.text}"`;
-    if(elements.quoteAuthor) elements.quoteAuthor.textContent = `- ${quote.author}`;
+function extractDomain(url) {
+    try {
+        if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+        return new URL(url).hostname;
+    } catch { return ''; }
 }
 
-// --- LINKS ---
 function renderLinks() {
-    if(!elements.linksGrid) return;
-    elements.linksGrid.innerHTML = appState.links.map(link => `
-        <a href="${link.url}" target="_blank" class="link-card">
-            <button class="delete-link" onclick="deleteLink(${link.id}, event)"><i class="fas fa-times"></i></button>
-            <i class="fab ${link.icon.startsWith('fa-') ? link.icon : 'fa-external-link-alt'}"></i>
-            <span>${link.name}</span>
-        </a>
-    `).join('');
+    if (!elements.linksGrid) return;
+    elements.linksGrid.innerHTML = appState.links.map(link => {
+        const hasCustomIcon = link.icon && link.icon.includes('fa-');
+        const domain = extractDomain(link.url);
+        const sanitizedUrl = sanitizeUrl(link.url);
+        const logoHtml = hasCustomIcon
+            ? `<i class="${escapeHtml(link.icon)}"></i>`
+            : `<img class="link-logo" src="https://www.google.com/s2/favicons?domain=${escapeHtml(domain)}&sz=64"
+                   onerror="this.style.display='none';this.parentElement.querySelector('.link-logo-fallback').style.display='block'" alt="">
+               <i class="fas fa-globe link-logo-fallback" style="display:none"></i>`;
+        return `
+            <div class="link-card" data-id="${link.id}">
+                <button class="link-menu-btn" onclick="toggleLinkMenu(this, event)" title="More options"><i class="fas fa-ellipsis-v"></i></button>
+                <div class="link-menu-dropdown">
+                    <button onclick="editLink(${link.id}, event)"><i class="fas fa-pen"></i> Edit</button>
+                    <button onclick="deleteLink(${link.id}, event)" class="danger"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+                <a href="${sanitizedUrl}" target="_blank" class="link-card-main">
+                    ${logoHtml}
+                    <span>${escapeHtml(link.name)}</span>
+                </a>
+                <div class="link-card-actions">
+                    <button class="link-action-btn" onclick="editLink(${link.id}, event)" title="Edit"><i class="fas fa-pen"></i> Edit</button>
+                    <button class="link-action-btn danger" onclick="deleteLink(${link.id}, event)" title="Delete"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
+
+window.toggleLinkMenu = (btn, e) => {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const dropdown = btn.nextElementSibling;
+    document.querySelectorAll('.link-menu-dropdown.show').forEach(m => {
+        if (m !== dropdown) {
+            m.classList.remove('show');
+        }
+    });
+    dropdown.classList.toggle('show');
+};
+
+window.toggleHabitMenu = (btn, e) => {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const dropdown = btn.nextElementSibling;
+    const container = btn.parentElement;
+    const cell = btn.closest('.habit-name-cell');
+
+    // Close other habit menus
+    document.querySelectorAll('.habit-menu-dropdown.show').forEach(m => {
+        if (m !== dropdown) {
+            m.classList.remove('show');
+            m.style.position = '';
+            m.style.top = '';
+            m.style.left = '';
+            m.style.zIndex = '';
+            m.style.display = '';
+        }
+    });
+    document.querySelectorAll('.habit-menu-container.menu-open').forEach(c => {
+        if (c !== container) {
+            c.classList.remove('menu-open');
+        }
+    });
+    document.querySelectorAll('.habit-name-cell.menu-open').forEach(c => {
+        if (c !== cell) {
+            c.classList.remove('menu-open');
+        }
+    });
+
+    const isShowing = dropdown.classList.toggle('show');
+    if (isShowing) {
+        container.classList.add('menu-open');
+        if (cell) cell.classList.add('menu-open');
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.position = 'fixed';
+        dropdown.style.top = `${rect.bottom + 4}px`;
+        dropdown.style.display = 'flex';
+        const width = dropdown.offsetWidth || 55;
+        dropdown.style.left = `${rect.right - width}px`;
+        dropdown.style.zIndex = '99999';
+    } else {
+        container.classList.remove('menu-open');
+        if (cell) cell.classList.remove('menu-open');
+        dropdown.style.position = '';
+        dropdown.style.top = '';
+        dropdown.style.left = '';
+        dropdown.style.zIndex = '';
+        dropdown.style.display = '';
+    }
+};
+
+const closeAllDropdowns = () => {
+    document.querySelectorAll('.link-menu-dropdown.show').forEach(m => {
+        m.classList.remove('show');
+        m.style.position = '';
+        m.style.top = '';
+        m.style.left = '';
+        m.style.zIndex = '';
+        m.style.display = '';
+    });
+    document.querySelectorAll('.habit-menu-dropdown.show').forEach(m => {
+        m.classList.remove('show');
+        m.style.position = '';
+        m.style.top = '';
+        m.style.left = '';
+        m.style.zIndex = '';
+        m.style.display = '';
+    });
+    document.querySelectorAll('.habit-menu-container.menu-open').forEach(c => {
+        c.classList.remove('menu-open');
+    });
+    document.querySelectorAll('.habit-name-cell.menu-open').forEach(c => {
+        c.classList.remove('menu-open');
+    });
+};
+
+document.addEventListener('click', closeAllDropdowns);
+document.addEventListener('scroll', closeAllDropdowns, { capture: true, passive: true });
 
 window.deleteLink = (id, e) => {
     e.preventDefault();
@@ -265,8 +457,43 @@ window.deleteLink = (id, e) => {
     renderLinks();
 };
 
+window.editLink = (id, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const link = appState.links.find(l => l.id === id);
+    if (!link) return;
+
+    showModal('Edit Quick Link', `
+        <form id="edit-link-form">
+            <div class="form-group">
+                <label>Link Name</label>
+                <input type="text" id="edit-link-name" required value="${escapeHtml(link.name)}">
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="url" id="edit-link-url" required value="${escapeHtml(link.url)}">
+            </div>
+            <div class="form-group">
+                <label>Icon (FontAwesome class, optional)</label>
+                <input type="text" id="edit-link-icon" placeholder="e.g. fab fa-github" value="${escapeHtml(link.icon)}">
+            </div>
+            <button type="submit" class="btn-primary block">Save Changes</button>
+        </form>
+    `);
+
+    document.getElementById('edit-link-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        link.name = document.getElementById('edit-link-name').value.trim();
+        link.url = sanitizeUrl(document.getElementById('edit-link-url').value.trim());
+        link.icon = document.getElementById('edit-link-icon').value.trim();
+        saveState();
+        renderLinks();
+        closeModal();
+    });
+};
+
 const addLinkBtn = document.getElementById('add-link-btn');
-if(addLinkBtn) {
+if (addLinkBtn) {
     addLinkBtn.addEventListener('click', () => {
         showModal('Add Quick Link', `
             <form id="add-link-form">
@@ -279,20 +506,20 @@ if(addLinkBtn) {
                     <input type="url" id="link-url" required placeholder="https://...">
                 </div>
                 <div class="form-group">
-                    <label>Icon Class (FontAwesome)</label>
-                    <input type="text" id="link-icon" placeholder="fa-link">
+                    <label>Icon (FontAwesome class, optional)</label>
+                    <input type="text" id="link-icon" placeholder="e.g. fab fa-github">
                 </div>
                 <button type="submit" class="btn-primary block">Add Link</button>
             </form>
         `);
-        
+
         document.getElementById('add-link-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const newLink = {
                 id: Date.now(),
-                name: document.getElementById('link-name').value,
-                url: document.getElementById('link-url').value,
-                icon: document.getElementById('link-icon').value || 'fa-link'
+                name: document.getElementById('link-name').value.trim(),
+                url: sanitizeUrl(document.getElementById('link-url').value.trim()),
+                icon: document.getElementById('link-icon').value.trim()
             };
             appState.links.push(newLink);
             saveState();
@@ -302,14 +529,13 @@ if(addLinkBtn) {
     });
 }
 
-// --- TASKS ---
 function renderTasks() {
-    if(!elements.taskList) return;
+    if (!elements.taskList) return;
     const filterBtn = document.querySelector('.filter-btn.active');
     const filter = filterBtn ? filterBtn.dataset.filter : 'all';
     const taskSearch = document.getElementById('task-search');
     const searchQuery = taskSearch ? taskSearch.value.toLowerCase() : '';
-    
+
     let filteredTasks = appState.tasks;
     if (filter === 'pending') filteredTasks = appState.tasks.filter(t => !t.completed);
     if (filter === 'completed') filteredTasks = appState.tasks.filter(t => t.completed);
@@ -321,22 +547,22 @@ function renderTasks() {
     elements.taskList.innerHTML = filteredTasks.map(task => `
         <li class="task-item ${task.completed ? 'completed' : ''}">
             <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
-            <span>${task.text}</span>
+            <span>${escapeHtml(task.text)}</span>
             <button class="delete-task" onclick="deleteTask(${task.id})"><i class="fas fa-trash"></i></button>
         </li>
     `).join('');
 }
 
 const taskSearch = document.getElementById('task-search');
-if(taskSearch) {
+if (taskSearch) {
     taskSearch.addEventListener('input', renderTasks);
 }
 
-if(elements.addTaskBtn) {
+if (elements.addTaskBtn) {
     elements.addTaskBtn.addEventListener('click', () => {
         const text = elements.taskInput.value.trim();
         if (text) {
-            appState.tasks.push({ id: Date.now(), text, completed: false, date: new Date().toLocaleDateString() });
+            appState.tasks.push({ id: Date.now(), text, completed: false, date: getLocalDateKey() });
             elements.taskInput.value = '';
             saveState();
             renderTasks();
@@ -365,215 +591,53 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 
-// --- CHARTS ---
-let codingChart, dashboardChart, habitProgressChart;
-function initCharts() {
-    const codingCtxEl = document.getElementById('coding-chart');
-    const dctxEl = document.getElementById('coding-chart-dashboard');
-    
-    if(codingCtxEl && dctxEl) {
-        const ctx = codingCtxEl.getContext('2d');
-        const dctx = dctxEl.getContext('2d');
-        
-        const last7Days = [];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            last7Days.push(d.toLocaleDateString());
-        }
+let habitsChart;
 
-        const dailyCounts = last7Days.map(date => {
-            return appState.codingLogs
-                .filter(log => log.date === date)
-                .reduce((sum, log) => sum + (Number(log.count) || 0), 0);
-        });
-
-        const chartConfig = {
-            type: 'bar',
-            data: {
-                labels: last7Days.map(d => d.split('/')[0] + '/' + d.split('/')[1]),
-                datasets: [{
-                    label: 'Problems Solved',
-                    data: dailyCounts,
-                    backgroundColor: '#6366f1',
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
-            }
-        };
-
-        codingChart = new Chart(ctx, JSON.parse(JSON.stringify(chartConfig)));
-        
-        chartConfig.options.plugins = { legend: { display: false } };
-        dashboardChart = new Chart(dctx, chartConfig);
-    }
-
-    initHabitProgressChart();
-}
-
-function initHabitProgressChart() {
-    const chartEl = document.getElementById('habit-progress-chart');
-    if(!chartEl) return;
-    const ctx = chartEl.getContext('2d');
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-    const completionData = labels.map(day => {
-        const dateStr = new Date(now.getFullYear(), now.getMonth(), day).toLocaleDateString();
-        const totalHabits = appState.habits.length;
-        if (totalHabits === 0) return 0;
-        const completedCount = appState.habits.filter(h => h.history && h.history[dateStr]).length;
-        return (completedCount / totalHabits) * 100;
-    });
-
-    habitProgressChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Habit Completion %',
-                data: completionData,
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, max: 100, ticks: { callback: value => value + '%' } },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-}
-
-function updateChart() {
-    if (!codingChart && !dashboardChart) return;
-    const last7Days = [];
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        last7Days.push(d.toLocaleDateString());
-    }
-    const dailyCounts = last7Days.map(date => {
-        return appState.codingLogs
-            .filter(log => log.date === date)
-            .reduce((sum, log) => sum + parseInt(log.count), 0);
-    });
-
-    if (codingChart) {
-        codingChart.data.datasets[0].data = dailyCounts;
-        codingChart.update();
-    }
-    if (dashboardChart) {
-        dashboardChart.data.datasets[0].data = dailyCounts;
-        dashboardChart.update();
-    }
-}
-
-function updateHabitProgressChart() {
-    if (!habitProgressChart) return;
-    const now = new Date();
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const completionData = Array.from({ length: daysInMonth }, (_, i) => {
-        const dateStr = new Date(now.getFullYear(), now.getMonth(), i + 1).toLocaleDateString();
-        const totalHabits = appState.habits.length;
-        if (totalHabits === 0) return 0;
-        const completedCount = appState.habits.filter(h => h.history && h.history[dateStr]).length;
-        return (completedCount / totalHabits) * 100;
-    });
-    habitProgressChart.data.datasets[0].data = completionData;
-    habitProgressChart.update();
-}
-
-if(elements.codingLogForm) {
-    elements.codingLogForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const log = {
-            id: Date.now(),
-            date: new Date().toLocaleDateString(),
-            platform: document.getElementById('platform').value,
-            count: document.getElementById('problems-count').value,
-            difficulty: document.getElementById('difficulty').value,
-            notes: document.getElementById('coding-notes').value
-        };
-        appState.codingLogs.push(log);
-        saveState();
-        renderCodingLogs();
-        updateChart();
-        elements.codingLogForm.reset();
-    });
-}
-
-function renderCodingLogs() {
-    if(!elements.codingLogBody) return;
-    elements.codingLogBody.innerHTML = appState.codingLogs.slice().reverse().slice(0, 10).map(log => `
-        <tr>
-            <td>${log.date}</td>
-            <td>${log.platform}</td>
-            <td>${log.count}</td>
-            <td><span class="status-badge status-ongoing">${log.difficulty}</span></td>
-            <td><button class="btn-text" onclick="deleteCodingLog(${log.id})"><i class="fas fa-trash"></i></button></td>
-        </tr>
-    `).join('');
-}
-
-window.deleteCodingLog = (id) => {
-    appState.codingLogs = appState.codingLogs.filter(l => l.id !== id);
-    saveState();
-    renderCodingLogs();
-    updateChart();
-};
-
-// --- HABITS & STREAK ---
 function renderHabits() {
     const now = new Date();
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const currentMonth = now.toLocaleString('default', { month: 'long', year: 'numeric' });
     const today = now.getDate();
-    
-    if(elements.habitMonthName) {
+
+    if (elements.habitMonthName) {
         elements.habitMonthName.textContent = currentMonth;
     }
-    
-    // Render Header
+
     let headHtml = '<th>Habit</th>';
     for (let i = 1; i <= daysInMonth; i++) {
         headHtml += `<th class="${i === today ? 'today' : ''}">${i}</th>`;
     }
-    if(elements.habitsTableHead) {
+    if (elements.habitsTableHead) {
         elements.habitsTableHead.innerHTML = headHtml;
     }
-    
-    // Render Body
-    if(elements.habitsTableBody) {
+
+    if (elements.habitsTableBody) {
         elements.habitsTableBody.innerHTML = appState.habits.map(habit => {
+            const escapedName = escapeHtml(habit.name);
             let cellsHtml = `
                 <td class="habit-name-cell">
-                    <span>${habit.name}</span>
-                    <div class="habit-actions">
-                        <button class="btn-text" onclick="editHabit(${habit.id})"><i class="fas fa-edit"></i></button>
-                        <button class="btn-text" onclick="deleteHabit(${habit.id})"><i class="fas fa-trash"></i></button>
+                    <div class="habit-name-container">
+                        <span class="habit-name-text" title="${escapedName}">${escapedName}</span>
+                        <div class="habit-menu-container">
+                            <button class="habit-menu-btn" onclick="toggleHabitMenu(this, event)" title="More options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="habit-menu-dropdown">
+                                <button onclick="editHabit(${habit.id}); event.stopPropagation();" title="Edit Habit"><i class="fas fa-edit"></i> Edit</button>
+                                <button onclick="deleteHabit(${habit.id}); event.stopPropagation();" class="danger" title="Delete Habit"><i class="fas fa-trash"></i> Delete</button>
+                            </div>
+                        </div>
                     </div>
                 </td>
             `;
-            
+
             for (let i = 1; i <= daysInMonth; i++) {
-                const dateStr = new Date(now.getFullYear(), now.getMonth(), i).toLocaleDateString();
+                const dateStr = getLocalDateKey(new Date(now.getFullYear(), now.getMonth(), i));
                 const isCompleted = habit.history && habit.history[dateStr];
                 cellsHtml += `
                     <td>
-                        <div class="habit-cell ${isCompleted ? 'completed' : ''} ${i === today ? 'today' : ''}" 
-                            onclick="toggleHabitDay(${habit.id}, '${dateStr}')">
+                        <div class="habit-cell ${isCompleted ? 'completed' : ''} ${i === today ? 'today' : ''}"
+                             onclick="toggleHabitDay(${habit.id}, '${dateStr}')">
                         </div>
                     </td>
                 `;
@@ -581,10 +645,13 @@ function renderHabits() {
             return `<tr>${cellsHtml}</tr>`;
         }).join('');
     }
-    
-    if(elements.habitStreakDisplay) {
+
+    if (elements.habitStreakDisplay) {
         elements.habitStreakDisplay.textContent = appState.habitStreak;
     }
+
+    // Keep chart in sync with current checklist state
+    updateHabitGraph();
 }
 
 window.toggleHabitDay = (habitId, dateStr) => {
@@ -592,12 +659,9 @@ window.toggleHabitDay = (habitId, dateStr) => {
     if (habit) {
         if (!habit.history) habit.history = {};
         habit.history[dateStr] = !habit.history[dateStr];
-        
-        // Update streak logic
         updateHabitStreak();
-        
         saveState();
-        renderHabits();
+        renderHabits(); // will call updateHabitGraph()
     }
 };
 
@@ -607,25 +671,23 @@ window.resetHabits = () => {
         appState.habitStreak = 0;
         saveState();
         renderHabits();
-        updateHabitProgressChart();
     }
 };
 
 function updateHabitStreak() {
     let streak = 0;
     const now = new Date();
-    
+
     for (let i = 0; i < 365; i++) {
         const d = new Date();
         d.setDate(now.getDate() - i);
-        const dStr = d.toLocaleDateString();
-        
+        const dStr = getLocalDateKey(d);
+
         const allDone = appState.habits.length > 0 && appState.habits.every(h => h.history && h.history[dStr]);
-        
+
         if (allDone) {
             streak++;
         } else if (i === 0) {
-            // If today isn't done yet, don't break streak, just check yesterday
             continue;
         } else {
             break;
@@ -634,7 +696,7 @@ function updateHabitStreak() {
     appState.habitStreak = streak;
 }
 
-if(elements.addHabitBtn) {
+if (elements.addHabitBtn) {
     elements.addHabitBtn.addEventListener('click', () => {
         showModal('Add Habit', `
             <form id="add-habit-form">
@@ -645,10 +707,10 @@ if(elements.addHabitBtn) {
                 <button type="submit" class="btn-primary block">Add Habit</button>
             </form>
         `);
-        
+
         document.getElementById('add-habit-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const name = document.getElementById('habit-name-input').value;
+            const name = document.getElementById('habit-name-input').value.trim();
             appState.habits.push({ id: Date.now(), name, history: {} });
             saveState();
             renderHabits();
@@ -660,19 +722,20 @@ if(elements.addHabitBtn) {
 window.editHabit = (id) => {
     const habit = appState.habits.find(h => h.id === id);
     if (!habit) return;
+    closeAllDropdowns();
     showModal('Edit Habit', `
         <form id="edit-habit-form">
             <div class="form-group">
                 <label>Habit Name</label>
-                <input type="text" id="edit-habit-name-input" value="${habit.name}" required>
+                <input type="text" id="edit-habit-name-input" value="${escapeHtml(habit.name)}" required>
             </div>
             <button type="submit" class="btn-primary block">Save Changes</button>
         </form>
     `);
-    
+
     document.getElementById('edit-habit-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        habit.name = document.getElementById('edit-habit-name-input').value;
+        habit.name = document.getElementById('edit-habit-name-input').value.trim();
         saveState();
         renderHabits();
         closeModal();
@@ -680,6 +743,7 @@ window.editHabit = (id) => {
 };
 
 window.deleteHabit = (id) => {
+    closeAllDropdowns();
     if (confirm('Are you sure you want to delete this habit?')) {
         appState.habits = appState.habits.filter(h => h.id !== id);
         saveState();
@@ -687,156 +751,44 @@ window.deleteHabit = (id) => {
     }
 };
 
-// --- TARGETS ---
-function renderTargets() {
-    if (!elements.weeklyTargetsList || !elements.monthlyTargetsList) return;
-
-    elements.weeklyTargetsList.innerHTML = appState.weeklyTargets.map((target, index) => `
-        <li class="target-item-simple">
-            <input type="checkbox" ${target.completed ? 'checked' : ''} onchange="toggleTarget('weekly', ${index})">
-            <input type="text" value="${escapeHtml(target.text)}" onchange="updateTargetText('weekly', ${index}, this.value)" placeholder="New Weekly Target...">
-            <button class="delete-target" onclick="deleteTarget('weekly', ${index})"><i class="fas fa-times"></i></button>
-        </li>
-    `).join('');
-
-    elements.monthlyTargetsList.innerHTML = appState.monthlyTargets.map((target, index) => `
-        <li class="target-item-simple">
-            <input type="checkbox" ${target.completed ? 'checked' : ''} onchange="toggleTarget('monthly', ${index})">
-            <input type="text" value="${escapeHtml(target.text)}" onchange="updateTargetText('monthly', ${index}, this.value)" placeholder="New Monthly Target...">
-            <button class="delete-target" onclick="deleteTarget('monthly', ${index})"><i class="fas fa-times"></i></button>
-        </li>
-    `).join('');
-}
-
-window.toggleTarget = (type, index) => {
-    const list = type === 'weekly' ? appState.weeklyTargets : appState.monthlyTargets;
-    list[index].completed = !list[index].completed;
-    saveState();
-};
-
-window.updateTargetText = (type, index, text) => {
-    const list = type === 'weekly' ? appState.weeklyTargets : appState.monthlyTargets;
-    list[index].text = text;
-    saveState();
-};
-
-window.deleteTarget = (type, index) => {
-    const list = type === 'weekly' ? appState.weeklyTargets : appState.monthlyTargets;
-    list.splice(index, 1);
-    saveState();
-    renderTargets();
-};
-
-if (elements.addWeeklyTargetBtn) {
-    elements.addWeeklyTargetBtn.addEventListener('click', () => {
-        appState.weeklyTargets.push({ text: '', completed: false });
-        saveState();
-        renderTargets();
-    });
-}
-
-if (elements.addMonthlyTargetBtn) {
-    elements.addMonthlyTargetBtn.addEventListener('click', () => {
-        appState.monthlyTargets.push({ text: '', completed: false });
-        saveState();
-        renderTargets();
-    });
-}
-
-// --- POMODORO ---
-let timerInterval;
-let timeLeft = appState.pomodoroSettings.work * 60;
-let currentMode = 'work';
-let isRunning = false;
-
-function updateTimerDisplay() {
-    const mins = Math.floor(timeLeft / 60);
-    const secs = timeLeft % 60;
-    if(elements.timerDisplay) {
-        elements.timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-}
-
-if(elements.pomoStartBtn) {
-    elements.pomoStartBtn.addEventListener('click', () => {
-        if (isRunning) {
-            clearInterval(timerInterval);
-            elements.pomoStartBtn.textContent = 'Start';
-            isRunning = false;
-        } else {
-            isRunning = true;
-            elements.pomoStartBtn.textContent = 'Pause';
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    const notifSound = document.getElementById('notification-sound');
-                    if(notifSound) notifSound.play();
-                    alert('Time is up!');
-                    if (currentMode === 'work') {
-                        appState.stats.focusTimeMinutes += appState.pomodoroSettings.work;
-                        saveState();
-                    }
-                    resetTimer();
-                }
-            }, 1000);
-        }
-    });
-}
-
-function resetTimer() {
-    clearInterval(timerInterval);
-    isRunning = false;
-    if(elements.pomoStartBtn) {
-        elements.pomoStartBtn.textContent = 'Start';
-    }
-    timeLeft = appState.pomodoroSettings[currentMode] * 60;
-    updateTimerDisplay();
-}
-
-if(elements.pomoResetBtn) {
-    elements.pomoResetBtn.addEventListener('click', resetTimer);
-}
-
-if(elements.pomoModeBtns) {
-    elements.pomoModeBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            elements.pomoModeBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentMode = btn.dataset.mode;
-            resetTimer();
-        });
-    });
-}
-
-// --- NOTES ---
 function renderNotes() {
     const searchQuery = document.getElementById('note-search')?.value.toLowerCase() || '';
-    let filteredNotes = appState.notes;
-    
+    let filteredNotes = appState.notes || [];
+
     if (searchQuery) {
-        filteredNotes = filteredNotes.filter(n => 
-            n.title.toLowerCase().includes(searchQuery) || 
+        filteredNotes = filteredNotes.filter(n =>
+            n.title.toLowerCase().includes(searchQuery) ||
             n.content.toLowerCase().includes(searchQuery)
         );
     }
 
-    if(elements.notesGrid) {
-        elements.notesGrid.innerHTML = filteredNotes.map(note => `
-            <div class="note-card">
-                <h4>${note.title}</h4>
-                <p>${note.content}</p>
-                <div class="note-footer">
-                    <span>${note.date}</span>
-                    <button class="btn-text" onclick="deleteNote(${note.id})"><i class="fas fa-trash"></i></button>
+    if (elements.notesGrid) {
+        if (filteredNotes.length === 0) {
+            elements.notesGrid.innerHTML = `
+                <div class="notes-empty-state" style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--mute); font-style: italic;">
+                    <i class="fas fa-sticky-note" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--mute); display: block; opacity: 0.5;"></i>
+                    No notes found. Click "+ New Note" to add one!
                 </div>
-            </div>
-        `).join('');
+            `;
+        } else {
+            elements.notesGrid.innerHTML = filteredNotes.map(note => `
+                <div class="note-card">
+                    <h4>${escapeHtml(note.title)}</h4>
+                    <p>${escapeHtml(note.content).replace(/\n/g, '<br>')}</p>
+                    <div class="note-footer">
+                        <span>${escapeHtml(note.date)}</span>
+                        <div>
+                            <button class="btn-text" onclick="editNote(${note.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn-text" onclick="deleteNote(${note.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
     }
 }
 
-if(document.getElementById('note-search')) {
+if (document.getElementById('note-search')) {
     document.getElementById('note-search').addEventListener('input', renderNotes);
 }
 
@@ -846,8 +798,35 @@ window.deleteNote = (id) => {
     renderNotes();
 };
 
+window.editNote = (id) => {
+    const note = appState.notes.find(n => n.id === id);
+    if (!note) return;
+    showModal('Edit Note', `
+        <form id="edit-note-form">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="edit-note-title" value="${escapeHtml(note.title)}" required>
+            </div>
+            <div class="form-group">
+                <label>Content</label>
+                <textarea id="edit-note-content" rows="5" required>${escapeHtml(note.content)}</textarea>
+            </div>
+            <button type="submit" class="btn-primary block">Save Changes</button>
+        </form>
+    `);
+
+    document.getElementById('edit-note-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        note.title = document.getElementById('edit-note-title').value.trim();
+        note.content = document.getElementById('edit-note-content').value.trim();
+        saveState();
+        renderNotes();
+        closeModal();
+    });
+};
+
 const addNoteBtn = document.getElementById('add-note-btn');
-if(addNoteBtn) {
+if (addNoteBtn) {
     addNoteBtn.addEventListener('click', () => {
         showModal('Add Note', `
             <form id="add-note-form">
@@ -862,14 +841,14 @@ if(addNoteBtn) {
                 <button type="submit" class="btn-primary block">Save Note</button>
             </form>
         `);
-        
+
         document.getElementById('add-note-form').addEventListener('submit', (e) => {
             e.preventDefault();
             appState.notes.push({
                 id: Date.now(),
-                title: document.getElementById('note-title').value,
-                content: document.getElementById('note-content').value,
-                date: new Date().toLocaleDateString()
+                title: document.getElementById('note-title').value.trim(),
+                content: document.getElementById('note-content').value.trim(),
+                date: getLocalDateKey()
             });
             saveState();
             renderNotes();
@@ -878,208 +857,276 @@ if(addNoteBtn) {
     });
 }
 
-// --- PROJECTS ---
-function renderProjects() {
-    if(!elements.projectsGrid) return;
-    elements.projectsGrid.innerHTML = appState.projects.map(p => `
-        <div class="project-card card">
-            <h4>${p.name} <span class="status-badge ${p.status === 'Completed' ? 'status-completed' : 'status-ongoing'}">${p.status}</span></h4>
-            <p>${p.description}</p>
-            <div class="form-group mt-20">
-                <strong>Stack:</strong> ${p.stack}
-            </div>
-            <div class="note-footer">
-                <a href="${p.link}" target="_blank" class="btn-text"><i class="fab fa-github"></i> View</a>
-                <button class="btn-text" onclick="deleteProject(${p.id})"><i class="fas fa-trash"></i></button>
-            </div>
-        </div>
-    `).join('');
-}
-
-window.deleteProject = (id) => {
-    appState.projects = appState.projects.filter(p => p.id !== id);
-    saveState();
-    renderProjects();
-};
-
-const addProjectBtn = document.getElementById('add-project-btn');
-if(addProjectBtn) {
-    addProjectBtn.addEventListener('click', () => {
-        showModal('Add Project', `
-            <form id="add-project-form">
-                <div class="form-group">
-                    <label>Project Name</label>
-                    <input type="text" id="proj-name" required>
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select id="proj-status">
-                        <option value="Ongoing">Ongoing</option>
-                        <option value="Completed">Completed</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Tech Stack</label>
-                    <input type="text" id="proj-stack" placeholder="e.g. React, Node.js">
-                </div>
-                <div class="form-group">
-                    <label>GitHub Link</label>
-                    <input type="url" id="proj-link">
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="proj-desc" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn-primary block">Add Project</button>
-            </form>
-        `);
-        
-        document.getElementById('add-project-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            appState.projects.push({
-                id: Date.now(),
-                name: document.getElementById('proj-name').value,
-                status: document.getElementById('proj-status').value,
-                stack: document.getElementById('proj-stack').value,
-                link: document.getElementById('proj-link').value,
-                description: document.getElementById('proj-desc').value
-            });
-            saveState();
-            renderProjects();
-            closeModal();
-        });
-    });
-}
-
-// --- PLACEMENTS ---
-function renderPlacements() {
-    if(!elements.placementBody) return;
-    elements.placementBody.innerHTML = appState.placements.map(p => `
-        <tr>
-            <td>${p.company}</td>
-            <td>${p.role}</td>
-            <td><span class="status-badge status-ongoing">${p.status}</span></td>
-            <td>${p.date}</td>
-            <td>
-                <a href="${p.link}" target="_blank" class="btn-text"><i class="fas fa-external-link-alt"></i></a>
-                <button class="btn-text" onclick="deletePlacement(${p.id})"><i class="fas fa-trash"></i></button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-window.deletePlacement = (id) => {
-    appState.placements = appState.placements.filter(p => p.id !== id);
-    saveState();
-    renderPlacements();
-};
-
-const addPlacementBtn = document.getElementById('add-placement-btn');
-if(addPlacementBtn) {
-    addPlacementBtn.addEventListener('click', () => {
-        showModal('Add Application', `
-            <form id="add-placement-form">
-                <div class="form-group">
-                    <label>Company</label>
-                    <input type="text" id="place-company" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <input type="text" id="place-role" required>
-                </div>
-                <div class="form-group">
-                    <label>Status</label>
-                    <select id="place-status">
-                        <option value="Applied">Applied</option>
-                        <option value="OA">OA</option>
-                        <option value="Interview">Interview</option>
-                        <option value="Selected">Selected</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Link</label>
-                    <input type="url" id="place-link">
-                </div>
-                <button type="submit" class="btn-primary block">Add Application</button>
-            </form>
-        `);
-        
-        document.getElementById('add-placement-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            appState.placements.push({
-                id: Date.now(),
-                company: document.getElementById('place-company').value,
-                role: document.getElementById('place-role').value,
-                status: document.getElementById('place-status').value,
-                link: document.getElementById('place-link').value,
-                date: new Date().toLocaleDateString()
-            });
-            saveState();
-            renderPlacements();
-            closeModal();
-        });
-    });
-}
-
-// --- STATS ---
 function updateStats() {
-    const today = new Date().toLocaleDateString();
-    
+    const today = getLocalDateKey();
+
     const todaysTasks = appState.tasks.filter(t => t.date === today);
     const tasksDoneToday = todaysTasks.filter(t => t.completed).length;
-    
-    const problemsToday = appState.codingLogs
-        .filter(log => log.date === today)
-        .reduce((sum, log) => sum + (Number(log.count) || 0), 0);
-    
-    if(elements.statTasksDone) elements.statTasksDone.textContent = tasksDoneToday;
-    if(elements.statCodingToday) elements.statCodingToday.textContent = problemsToday;
-    if(elements.statStreak) elements.statStreak.textContent = appState.habitStreak;
-    if(elements.statFocusTime) elements.statFocusTime.textContent = (appState.stats.focusTimeMinutes / 60).toFixed(1) + 'h';
 
-    // Update Progress Bar
+    if (elements.statTasksDone) elements.statTasksDone.textContent = tasksDoneToday;
+    if (elements.statStreak) elements.statStreak.textContent = appState.habitStreak;
+    if (elements.statFocusTime) elements.statFocusTime.textContent = (appState.stats.focusTimeMinutes / 60).toFixed(1) + 'h';
+
     const progressPercent = todaysTasks.length > 0 ? (tasksDoneToday / todaysTasks.length) * 100 : 0;
     const progressBar = document.getElementById('task-progress-bar');
     const progressText = document.getElementById('task-progress-text');
-    
+
     if (progressBar) progressBar.style.width = `${progressPercent}%`;
     if (progressText) progressText.textContent = `${tasksDoneToday}/${todaysTasks.length}`;
 }
 
-// --- UTILS & MODAL ---
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function sanitizeUrl(url) {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (/^(javascript|data|vbscript):/i.test(trimmed)) {
+        return 'about:blank';
+    }
+    return trimmed;
+}
+
+function getLocalDateKey(date = new Date()) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function parseLocalDateString(str) {
+    if (!str) return null;
+    str = str.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return new Date(str);
+    }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+
+    const parts = str.split(/[./-]/);
+    if (parts.length === 3) {
+        if (parts[0].length === 4) {
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            return new Date(y, m, day);
+        }
+        if (parts[2].length === 4) {
+            const y = parseInt(parts[2], 10);
+            const p0 = parseInt(parts[0], 10);
+            const p1 = parseInt(parts[1], 10);
+            const d1 = new Date(y, p0 - 1, p1);
+            if (!isNaN(d1.getTime())) return d1;
+        }
+    }
+    return null;
+}
+
+function migrateLocaleDates() {
+    let modified = false;
+
+    if (appState.tasks && Array.isArray(appState.tasks)) {
+        appState.tasks.forEach(t => {
+            if (t.date && !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) {
+                const parsed = parseLocalDateString(t.date);
+                if (parsed) {
+                    t.date = getLocalDateKey(parsed);
+                    modified = true;
+                }
+            }
+        });
+    }
+
+    if (appState.habits && Array.isArray(appState.habits)) {
+        appState.habits.forEach(h => {
+            if (h.history && typeof h.history === 'object') {
+                const newHistory = {};
+                let habitModified = false;
+                for (const oldKey in h.history) {
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(oldKey)) {
+                        const parsed = parseLocalDateString(oldKey);
+                        if (parsed) {
+                            const newKey = getLocalDateKey(parsed);
+                            newHistory[newKey] = h.history[oldKey];
+                            habitModified = true;
+                        } else {
+                            newHistory[oldKey] = h.history[oldKey];
+                        }
+                    } else {
+                        newHistory[oldKey] = h.history[oldKey];
+                    }
+                }
+                if (habitModified) {
+                    h.history = newHistory;
+                    modified = true;
+                }
+            }
+        });
+    }
+
+    if (appState.notes && Array.isArray(appState.notes)) {
+        appState.notes.forEach(n => {
+            if (n.date && !/^\d{4}-\d{2}-\d{2}$/.test(n.date)) {
+                const parsed = parseLocalDateString(n.date);
+                if (parsed) {
+                    n.date = getLocalDateKey(parsed);
+                    modified = true;
+                }
+            }
+        });
+    }
+
+    if (modified) {
+        saveState();
+    }
+}
+
+function sanitizeAppState(data) {
+    if (!data || typeof data !== 'object') return { ...DEFAULT_STATE };
+
+    const cleanState = { ...DEFAULT_STATE };
+
+    if (data.theme === 'light' || data.theme === 'dark') {
+        cleanState.theme = data.theme;
+    }
+
+    if (Array.isArray(data.links)) {
+        cleanState.links = data.links
+            .filter(link => link && typeof link === 'object' && link.name && link.url)
+            .map(link => ({
+                id: Number(link.id) || Date.now(),
+                name: String(link.name).trim(),
+                url: sanitizeUrl(String(link.url).trim()),
+                icon: String(link.icon || '').trim()
+            }));
+    }
+
+    if (Array.isArray(data.tasks)) {
+        cleanState.tasks = data.tasks
+            .filter(task => task && typeof task === 'object' && task.text)
+            .map(task => ({
+                id: Number(task.id) || Date.now(),
+                text: String(task.text).trim(),
+                completed: Boolean(task.completed),
+                date: String(task.date || getLocalDateKey()).trim()
+            }));
+    }
+
+    if (Array.isArray(data.habits)) {
+        cleanState.habits = data.habits
+            .filter(habit => habit && typeof habit === 'object' && habit.name)
+            .map(habit => {
+                const cleanHistory = {};
+                if (habit.history && typeof habit.history === 'object') {
+                    for (const k in habit.history) {
+                        cleanHistory[String(k)] = Boolean(habit.history[k]);
+                    }
+                }
+                return {
+                    id: Number(habit.id) || Date.now(),
+                    name: String(habit.name).trim(),
+                    history: cleanHistory
+                };
+            });
+    }
+
+    cleanState.habitStreak = Math.max(0, Number(data.habitStreak) || 0);
+    cleanState.lastHabitUpdate = data.lastHabitUpdate ? String(data.lastHabitUpdate) : null;
+
+    if (Array.isArray(data.notes)) {
+        cleanState.notes = data.notes
+            .filter(note => note && typeof note === 'object' && note.title && note.content)
+            .map(note => ({
+                id: Number(note.id) || Date.now(),
+                title: String(note.title).trim(),
+                content: String(note.content).trim(),
+                date: String(note.date || getLocalDateKey()).trim()
+            }));
+    }
+
+    if (data.stats && typeof data.stats === 'object') {
+        cleanState.stats = {
+            focusTimeMinutes: Math.max(0, Number(data.stats.focusTimeMinutes) || 0)
+        };
+    }
+
+    if (data.pomodoro && typeof data.pomodoro === 'object') {
+        cleanState.pomodoro = {
+            workDuration: Math.max(1, Number(data.pomodoro.workDuration) || 25),
+            shortDuration: Math.max(1, Number(data.pomodoro.shortDuration) || 5),
+            longDuration: Math.max(1, Number(data.pomodoro.longDuration) || 15),
+            completedSessions: Math.max(0, Number(data.pomodoro.completedSessions) || 0),
+            isMuted: Boolean(data.pomodoro.isMuted)
+        };
+    }
+
+    if (data.moneyTracker && typeof data.moneyTracker === 'object') {
+        cleanState.moneyTracker = {
+            transactions: [],
+            filters: { ...DEFAULT_STATE.moneyTracker.filters }
+        };
+
+        if (Array.isArray(data.moneyTracker.transactions)) {
+            cleanState.moneyTracker.transactions = data.moneyTracker.transactions
+                .filter(t => t && typeof t === 'object' && t.type && t.amount)
+                .map(t => ({
+                    id: Number(t.id) || Date.now(),
+                    date: String(t.date || getLocalDateKey()).trim(),
+                    type: (t.type === 'Income' || t.type === 'Expense') ? t.type : 'Expense',
+                    amount: Math.max(0, parseFloat(t.amount) || 0),
+                    category: String(t.category || 'Other').trim(),
+                    mode: String(t.mode || 'UPI').trim(),
+                    notes: String(t.notes || '').trim()
+                }));
+        }
+
+        if (data.moneyTracker.filters && typeof data.moneyTracker.filters === 'object') {
+            const f = data.moneyTracker.filters;
+            cleanState.moneyTracker.filters = {
+                month: String(f.month || 'all').trim(),
+                category: String(f.category || 'all').trim(),
+                type: String(f.type || 'all').trim(),
+                search: String(f.search || '').trim(),
+                sortOrder: (f.sortOrder === 'asc' || f.sortOrder === 'desc') ? f.sortOrder : 'desc'
+            };
+        }
+    }
+
+    return cleanState;
 }
 
 function showModal(title, bodyHtml) {
-    if(!elements.modalTitle) return;
+    if (!elements.modalTitle) return;
     elements.modalTitle.textContent = title;
     elements.modalBody.innerHTML = bodyHtml;
     elements.modalOverlay.classList.remove('hidden');
 }
 
 function closeModal() {
-    if(elements.modalOverlay) elements.modalOverlay.classList.add('hidden');
+    if (elements.modalOverlay) elements.modalOverlay.classList.add('hidden');
 }
 
-if(elements.closeModal) {
+if (elements.closeModal) {
     elements.closeModal.addEventListener('click', closeModal);
 }
-if(elements.modalOverlay) {
+if (elements.modalOverlay) {
     elements.modalOverlay.addEventListener('click', (e) => {
         if (e.target === elements.modalOverlay) closeModal();
     });
 }
 
-// --- EXPORT / IMPORT ---
-if(elements.exportBtn) {
+if (elements.exportBtn) {
     elements.exportBtn.addEventListener('click', () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
         const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href",     dataStr);
+        downloadAnchorNode.setAttribute("href", dataStr);
         downloadAnchorNode.setAttribute("download", "productivity_data.json");
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
@@ -1087,11 +1134,11 @@ if(elements.exportBtn) {
     });
 }
 
-if(elements.importBtn) {
+if (elements.importBtn) {
     elements.importBtn.addEventListener('click', () => elements.importFile.click());
 }
 
-if(elements.importFile) {
+if (elements.importFile) {
     elements.importFile.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1099,7 +1146,7 @@ if(elements.importFile) {
         reader.onload = (event) => {
             try {
                 const importedData = JSON.parse(event.target.result);
-                appState = { ...DEFAULT_STATE, ...importedData };
+                appState = sanitizeAppState(importedData);
                 saveState();
                 location.reload();
             } catch (err) {
@@ -1110,69 +1157,45 @@ if(elements.importFile) {
     });
 }
 
-function initEventListeners() {
-    // Mobile menu toggle (simple)
-    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-    if(mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', () => {
-            const navLinks = document.querySelector('.nav-links');
-            if(!navLinks) return;
-            navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
-            navLinks.style.flexDirection = 'column';
-            navLinks.style.position = 'absolute';
-            navLinks.style.top = '100%';
-            navLinks.style.left = '0';
-            navLinks.style.width = '100%';
-            navLinks.style.backgroundColor = 'var(--card-bg)';
-            navLinks.style.padding = '1rem';
-            navLinks.style.borderBottom = '1px solid var(--border-color)';
-        });
-    }
-    initMoneyTracker();
-}
-
-// --- MONEY TRACKER LOGIC ---
 let expensePieChart, spendingBarChart;
 
 function initMoneyTracker() {
     if (!elements.transactionForm) return;
 
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateKey();
     const transDateEl = document.getElementById('trans-date');
     if (transDateEl) transDateEl.value = today;
 
-    // Event Listeners
     elements.transactionForm.addEventListener('submit', handleTransactionSubmit);
-    
+
     if (elements.moneySearch) {
         elements.moneySearch.addEventListener('input', () => {
             appState.moneyTracker.filters.search = elements.moneySearch.value;
             renderMoneyTracker();
         });
     }
-    
+
     if (elements.filterMonth) {
         elements.filterMonth.addEventListener('change', () => {
             appState.moneyTracker.filters.month = elements.filterMonth.value;
             renderMoneyTracker();
         });
     }
-    
+
     if (elements.filterCategory) {
         elements.filterCategory.addEventListener('change', () => {
             appState.moneyTracker.filters.category = elements.filterCategory.value;
             renderMoneyTracker();
         });
     }
-    
+
     if (elements.filterType) {
         elements.filterType.addEventListener('change', () => {
             appState.moneyTracker.filters.type = elements.filterType.value;
             renderMoneyTracker();
         });
     }
-    
+
     if (elements.sortDateBtn) {
         elements.sortDateBtn.addEventListener('click', () => {
             appState.moneyTracker.filters.sortOrder = appState.moneyTracker.filters.sortOrder === 'desc' ? 'asc' : 'desc';
@@ -1209,10 +1232,23 @@ function initMoneyTracker() {
                     try {
                         const importedTransactions = JSON.parse(event.target.result);
                         if (Array.isArray(importedTransactions)) {
-                            appState.moneyTracker.transactions = importedTransactions;
+                            const cleanTransactions = importedTransactions
+                                .filter(t => t && typeof t === 'object' && t.type && t.amount)
+                                .map(t => ({
+                                    id: Number(t.id) || Date.now(),
+                                    date: String(t.date || getLocalDateKey()).trim(),
+                                    type: (t.type === 'Income' || t.type === 'Expense') ? t.type : 'Expense',
+                                    amount: Math.max(0, parseFloat(t.amount) || 0),
+                                    category: String(t.category || 'Other').trim(),
+                                    mode: String(t.mode || 'UPI').trim(),
+                                    notes: String(t.notes || '').trim()
+                                }));
+                            appState.moneyTracker.transactions = cleanTransactions;
                             saveState();
                             renderMoneyTracker();
                             alert('Transactions imported successfully!');
+                        } else {
+                            alert('Invalid transaction list format.');
                         }
                     } catch (err) {
                         alert('Invalid JSON file.');
@@ -1224,10 +1260,9 @@ function initMoneyTracker() {
         });
     }
 
-    // Initialize UI
     updateFilterOptions();
-    renderMoneyTracker();
     initMoneyCharts();
+    renderMoneyTracker();
 }
 
 function handleTransactionSubmit(e) {
@@ -1313,11 +1348,11 @@ function renderTransactionTable() {
     if (!elements.transactionBody) return;
     const filters = appState.moneyTracker.filters;
     let filtered = appState.moneyTracker.transactions.filter(t => {
-        const matchesSearch = t.notes.toLowerCase().includes(filters.search.toLowerCase()) || 
-                             t.category.toLowerCase().includes(filters.search.toLowerCase());
+        const matchesSearch = t.notes.toLowerCase().includes(filters.search.toLowerCase()) ||
+            t.category.toLowerCase().includes(filters.search.toLowerCase());
         const matchesType = filters.type === 'all' || t.type === filters.type;
         const matchesCategory = filters.category === 'all' || t.category === filters.category;
-        
+
         let matchesMonth = true;
         if (filters.month !== 'all') {
             const tDate = new Date(t.date);
@@ -1328,27 +1363,31 @@ function renderTransactionTable() {
         return matchesSearch && matchesType && matchesCategory && matchesMonth;
     });
 
-    // Sort
     filtered.sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
         return filters.sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
-    elements.transactionBody.innerHTML = filtered.map(t => `
-        <tr>
-            <td>${t.date}</td>
-            <td><span class="status-badge ${t.type === 'Income' ? 'status-completed' : 'status-ongoing'}">${t.type}</span></td>
-            <td class="${t.type === 'Income' ? 'text-success' : 'text-danger'}">₹${parseFloat(t.amount).toLocaleString()}</td>
-            <td>${t.category}</td>
-            <td>${t.mode}</td>
-            <td title="${t.notes}">${t.notes.substring(0, 15)}${t.notes.length > 15 ? '...' : ''}</td>
-            <td>
-                <button class="btn-text" onclick="editTransaction(${t.id})"><i class="fas fa-edit"></i></button>
-                <button class="btn-text text-danger" onclick="deleteTransaction(${t.id})"><i class="fas fa-trash"></i></button>
-            </td>
-        </tr>
-    `).join('');
+    elements.transactionBody.innerHTML = filtered.map(t => {
+        const typeEscaped = escapeHtml(t.type);
+        const notesEscaped = escapeHtml(t.notes);
+        const notesSubstring = escapeHtml(t.notes.substring(0, 15));
+        return `
+            <tr>
+                <td>${escapeHtml(t.date)}</td>
+                <td><span class="status-badge ${t.type === 'Income' ? 'status-completed' : 'status-ongoing'}">${typeEscaped}</span></td>
+                <td class="${t.type === 'Income' ? 'text-success' : 'text-danger'}">₹${parseFloat(t.amount).toLocaleString()}</td>
+                <td>${escapeHtml(t.category)}</td>
+                <td>${escapeHtml(t.mode)}</td>
+                <td title="${notesEscaped}">${notesSubstring}${t.notes.length > 15 ? '...' : ''}</td>
+                <td>
+                    <button class="btn-text" onclick="editTransaction(${t.id})"><i class="fas fa-edit"></i></button>
+                    <button class="btn-text text-danger" onclick="deleteTransaction(${t.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 window.deleteTransaction = (id) => {
@@ -1366,7 +1405,7 @@ window.editTransaction = (id) => {
         <form id="edit-transaction-form">
             <div class="form-group">
                 <label>Date</label>
-                <input type="date" id="edit-trans-date" value="${t.date}" required>
+                <input type="date" id="edit-trans-date" value="${escapeHtml(t.date)}" required>
             </div>
             <div class="form-group">
                 <label>Type</label>
@@ -1377,7 +1416,7 @@ window.editTransaction = (id) => {
             </div>
             <div class="form-group">
                 <label>Amount (₹)</label>
-                <input type="number" id="edit-trans-amount" value="${t.amount}" min="1" required>
+                <input type="number" id="edit-trans-amount" value="${escapeHtml(t.amount)}" min="1" required>
             </div>
             <div class="form-group">
                 <label>Category</label>
@@ -1404,7 +1443,7 @@ window.editTransaction = (id) => {
             </div>
             <div class="form-group">
                 <label>Notes</label>
-                <textarea id="edit-trans-notes" rows="2">${t.notes}</textarea>
+                <textarea id="edit-trans-notes" rows="2">${escapeHtml(t.notes)}</textarea>
             </div>
             <button type="submit" class="btn-primary block">Save Changes</button>
         </form>
@@ -1412,12 +1451,12 @@ window.editTransaction = (id) => {
 
     document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        t.date = document.getElementById('edit-trans-date').value;
-        t.type = document.getElementById('edit-trans-type').value;
-        t.amount = parseFloat(document.getElementById('edit-trans-amount').value);
-        t.category = document.getElementById('edit-trans-category').value;
-        t.mode = document.getElementById('edit-trans-mode').value;
-        t.notes = document.getElementById('edit-trans-notes').value;
+        t.date = document.getElementById('edit-trans-date').value.trim();
+        t.type = document.getElementById('edit-trans-type').value.trim();
+        t.amount = parseFloat(document.getElementById('edit-trans-amount').value) || 0;
+        t.category = document.getElementById('edit-trans-category').value.trim();
+        t.mode = document.getElementById('edit-trans-mode').value.trim();
+        t.notes = document.getElementById('edit-trans-notes').value.trim();
         saveState();
         renderMoneyTracker();
         closeModal();
@@ -1501,21 +1540,20 @@ function initMoneyCharts() {
 
     expensePieChart = new Chart(pieCtx, {
         type: 'doughnut',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'] }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, color: appState.theme === 'dark' ? '#f1f5f9' : '#1e293b' } } } }
+        data: { labels: [], datasets: [{ data: [], backgroundColor: ['#171717', '#4d4d4d', '#888888', '#a1a1a1', '#d4d4d4', '#2d2d2d', '#6b6b6b', '#b0b0b0', '#ebebeb'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, color: appState.theme === 'dark' ? '#f1f5f9' : '#171717' } } } }
     });
 
     spendingBarChart = new Chart(barCtx, {
         type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Expense', data: [], backgroundColor: '#ef4444' }, { label: 'Income', data: [], backgroundColor: '#10b981' }] },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { color: appState.theme === 'dark' ? '#334155' : '#e2e8f0' } }, x: { grid: { display: false } } } }
+        data: { labels: [], datasets: [{ label: 'Expense', data: [], backgroundColor: '#171717' }, { label: 'Income', data: [], backgroundColor: '#888888' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: appState.theme === 'dark' ? '#f1f5f9' : '#171717', boxWidth: 12 } } }, scales: { y: { beginAtZero: true, grid: { color: appState.theme === 'dark' ? '#334155' : '#ebebeb' }, ticks: { color: appState.theme === 'dark' ? '#94a3b8' : '#888888' } }, x: { grid: { display: false }, ticks: { color: appState.theme === 'dark' ? '#94a3b8' : '#888888' } } } }
     });
 }
 
 function updateMoneyCharts() {
     if (!expensePieChart || !spendingBarChart) return;
 
-    // Pie Chart
     const catMap = {};
     appState.moneyTracker.transactions.filter(t => t.type === 'Expense').forEach(t => {
         catMap[t.category] = (catMap[t.category] || 0) + parseFloat(t.amount);
@@ -1523,10 +1561,9 @@ function updateMoneyCharts() {
 
     expensePieChart.data.labels = Object.keys(catMap);
     expensePieChart.data.datasets[0].data = Object.values(catMap);
-    expensePieChart.options.plugins.legend.labels.color = appState.theme === 'dark' ? '#f1f5f9' : '#1e293b';
+    expensePieChart.options.plugins.legend.labels.color = appState.theme === 'dark' ? '#f5f5f5' : '#171717';
     expensePieChart.update();
 
-    // Bar Chart (Last 6 Months)
     const months = [];
     for (let i = 5; i >= 0; i--) {
         const d = new Date();
@@ -1546,8 +1583,453 @@ function updateMoneyCharts() {
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
     });
 
-    spendingBarChart.data.labels = months.map(m => new Date(m + '-01').toLocaleString('default', { month: 'short' }));
+    spendingBarChart.data.labels = months.map(m => {
+        const parts = m.split('-');
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        return new Date(year, month, 1).toLocaleString('default', { month: 'short' });
+    });
     spendingBarChart.data.datasets[0].data = expData;
     spendingBarChart.data.datasets[1].data = incData;
     spendingBarChart.update();
+}
+
+function initHabitChartTheme() {
+    return {
+        textColor: appState.theme === 'dark' ? '#f5f5f5' : '#171717',
+        gridColor: appState.theme === 'dark' ? '#2a2a2a' : '#ebebeb',
+        tickColor: appState.theme === 'dark' ? '#6b6b6b' : '#888888',
+        lineColor: appState.theme === 'dark' ? '#ffffff' : '#171717'
+    };
+}
+
+function getHabitCompletionForMonth() {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+    const totalHabits = appState.habits.length || 0;
+    const completion = [];
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dateStr = getLocalDateKey(new Date(now.getFullYear(), now.getMonth(), i));
+        let doneCount = 0;
+
+        if (totalHabits > 0) {
+            doneCount = appState.habits.reduce((sum, habit) => {
+                if (habit.history && habit.history[dateStr]) return sum + 1;
+                return sum;
+            }, 0);
+        }
+
+        const percent = totalHabits > 0 ? (doneCount / totalHabits) * 100 : 0;
+        completion.push(Number(percent.toFixed(1)));
+    }
+
+    const labels = Array.from({ length: daysInMonth }, (_, idx) => idx + 1);
+    return { labels, values: completion };
+}
+
+function initHabitsChart() {
+    const canvas = document.getElementById('habits-chart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const theme = initHabitChartTheme();
+
+    if (habitsChart) return;
+
+    const { labels, values } = getHabitCompletionForMonth();
+
+    habitsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Daily completion %',
+                    data: values,
+                    borderColor: theme.lineColor,
+                    backgroundColor: appState.theme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(23,23,23,0.10)',
+                    borderWidth: 2,
+                    tension: 0.35,
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: theme.tickColor,
+                        boxWidth: 12,
+                        font: { family: "'Inter', system-ui, sans-serif" }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.parsed.y}%`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    grid: { color: theme.gridColor },
+                    ticks: {
+                        color: theme.tickColor,
+                        callback: (v) => `${v}%`,
+                        font: { family: "'Inter', system-ui, sans-serif" }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: theme.tickColor,
+                        maxTicksLimit: 10,
+                        font: { family: "'Inter', system-ui, sans-serif" }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateHabitGraph() {
+    if (!habitsChart) return;
+
+    const theme = initHabitChartTheme();
+    const { labels, values } = getHabitCompletionForMonth();
+
+    habitsChart.data.labels = labels;
+    habitsChart.data.datasets[0].data = values;
+
+    habitsChart.options.plugins.legend.labels.color = theme.tickColor;
+    habitsChart.data.datasets[0].borderColor = theme.lineColor;
+    habitsChart.data.datasets[0].backgroundColor =
+        appState.theme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(23,23,23,0.10)';
+
+    habitsChart.options.scales.y.grid.color = theme.gridColor;
+    habitsChart.options.scales.y.ticks.color = theme.tickColor;
+    habitsChart.options.scales.x.ticks.color = theme.tickColor;
+
+    habitsChart.update();
+}
+
+function initEventListeners() {
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const navLinks = document.querySelector('.nav-links');
+
+    if (mobileMenuBtn && navLinks) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = navLinks.classList.contains('mobile-open');
+            if (isOpen) {
+                navLinks.classList.remove('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                mobileMenuBtn.classList.remove('open');
+            } else {
+                navLinks.classList.add('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-times"></i>';
+                mobileMenuBtn.classList.add('open');
+            }
+        });
+
+        // Close nav when clicking outside
+        document.addEventListener('click', (e) => {
+            if (
+                navLinks.classList.contains('mobile-open') &&
+                !navLinks.contains(e.target) &&
+                !mobileMenuBtn.contains(e.target)
+            ) {
+                navLinks.classList.remove('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                mobileMenuBtn.classList.remove('open');
+            }
+        });
+
+        // Close nav on window resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768 && navLinks.classList.contains('mobile-open')) {
+                navLinks.classList.remove('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                mobileMenuBtn.classList.remove('open');
+            }
+        });
+    }
+
+    initMoneyTracker();
+    initPomodoro();
+}
+
+
+let pomodoroTimer = null;
+let pomodoroTimeRemaining = 0;
+let pomodoroCurrentMode = 'work';
+let pomodoroIsRunning = false;
+
+function initPomodoro() {
+    // Mode duration helper
+    const getModeDuration = (mode) => {
+        if (mode === 'work') return appState.pomodoro.workDuration * 60;
+        if (mode === 'short') return appState.pomodoro.shortDuration * 60;
+        if (mode === 'long') return appState.pomodoro.longDuration * 60;
+        return 25 * 60;
+    };
+
+    // Reset countdown display
+    const resetTimerDisplay = () => {
+        const total = getModeDuration(pomodoroCurrentMode);
+        pomodoroTimeRemaining = total;
+        updateTimerDisplay();
+    };
+
+    const updateTimerDisplay = () => {
+        const minutes = Math.floor(pomodoroTimeRemaining / 60);
+        const seconds = pomodoroTimeRemaining % 60;
+        const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (elements.pomodoroTime) elements.pomodoroTime.textContent = timeStr;
+
+        // Update SVG Progress
+        const progressCircle = document.querySelector('.pomodoro-circle-progress');
+        if (progressCircle) {
+            const total = getModeDuration(pomodoroCurrentMode);
+            const ratio = total > 0 ? pomodoroTimeRemaining / total : 0;
+            const strokeDashOffset = 565.48 * (1 - ratio);
+            progressCircle.style.strokeDashoffset = strokeDashOffset;
+        }
+    };
+
+    const updateStatsDisplay = () => {
+        if (elements.pomodoroCompletedSessions) {
+            elements.pomodoroCompletedSessions.textContent = appState.pomodoro.completedSessions;
+        }
+        if (elements.pomodoroTotalFocusTime) {
+            elements.pomodoroTotalFocusTime.textContent = `${(appState.stats.focusTimeMinutes / 60).toFixed(1)}h`;
+        }
+    };
+
+    const playChime = () => {
+        if (appState.pomodoro.isMuted) return;
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const playBeep = (startTime) => {
+                const playTone = (freq, vol) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.12);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + 0.15);
+                };
+                
+                // Play soft dual-tone harmony
+                playTone(659.25, 0.08); // E5
+                playTone(880.00, 0.08); // A5
+            };
+            
+            const now = audioCtx.currentTime;
+            // Schedule 4 double-beeps (soft alarm ringtone)
+            for (let i = 0; i < 4; i++) {
+                const groupStart = now + i * 1.0;
+                playBeep(groupStart);
+                playBeep(groupStart + 0.2);
+            }
+
+            // Close the AudioContext after the chime completes to prevent resource leaks
+            setTimeout(() => {
+                audioCtx.close().catch(err => console.error("Error closing AudioContext", err));
+            }, 4500);
+        } catch (e) {
+            console.error("Audio error", e);
+        }
+    };
+
+    const handleTimerEnd = () => {
+        clearInterval(pomodoroTimer);
+        pomodoroTimer = null;
+        pomodoroIsRunning = false;
+
+        if (elements.pomodoroPlayBtn) {
+            elements.pomodoroPlayBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+        }
+
+        playChime();
+
+        if (pomodoroCurrentMode === 'work') {
+            appState.pomodoro.completedSessions++;
+            appState.stats.focusTimeMinutes += appState.pomodoro.workDuration;
+            saveState();
+            updateStatsDisplay();
+            alert("Great job! Work session completed. Time for a break!");
+        } else {
+            alert("Break ended! Ready to focus?");
+        }
+
+        // Switch modes automatically
+        if (pomodoroCurrentMode === 'work') {
+            if (appState.pomodoro.completedSessions % 4 === 0) {
+                switchMode('long');
+            } else {
+                switchMode('short');
+            }
+        } else {
+            switchMode('work');
+        }
+    };
+
+    const tick = () => {
+        if (pomodoroTimeRemaining > 0) {
+            pomodoroTimeRemaining--;
+            updateTimerDisplay();
+        } else {
+            handleTimerEnd();
+        }
+    };
+
+    const togglePlay = () => {
+        if (pomodoroIsRunning) {
+            // Pause
+            clearInterval(pomodoroTimer);
+            pomodoroTimer = null;
+            pomodoroIsRunning = false;
+            if (elements.pomodoroPlayBtn) {
+                elements.pomodoroPlayBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+            }
+        } else {
+            // Start
+            pomodoroIsRunning = true;
+            if (elements.pomodoroPlayBtn) {
+                elements.pomodoroPlayBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+            }
+            pomodoroTimer = setInterval(tick, 1000);
+        }
+    };
+
+    const switchMode = (mode) => {
+        // Pause current timer
+        if (pomodoroIsRunning) {
+            togglePlay();
+        }
+
+        pomodoroCurrentMode = mode;
+
+        // Update tabs active state
+        document.querySelectorAll('.pomodoro-mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // Update label
+        if (elements.pomodoroLabel) {
+            if (mode === 'work') elements.pomodoroLabel.textContent = 'WORK TIME';
+            if (mode === 'short') elements.pomodoroLabel.textContent = 'SHORT BREAK';
+            if (mode === 'long') elements.pomodoroLabel.textContent = 'LONG BREAK';
+        }
+
+        resetTimerDisplay();
+    };
+
+    // Mode Buttons Listeners
+    document.querySelectorAll('.pomodoro-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchMode(btn.dataset.mode);
+        });
+    });
+
+    // Control buttons listeners
+    if (elements.pomodoroPlayBtn) {
+        elements.pomodoroPlayBtn.addEventListener('click', togglePlay);
+    }
+
+    if (elements.pomodoroResetBtn) {
+        elements.pomodoroResetBtn.addEventListener('click', () => {
+            if (pomodoroIsRunning) {
+                togglePlay();
+            }
+            resetTimerDisplay();
+        });
+    }
+
+    // Settings Toggle Listeners
+    const settingsPanel = document.querySelector('.pomodoro-settings-panel');
+    const mainWrapper = document.querySelector('.pomodoro-wrapper');
+
+    if (elements.pomodoroSettingsBtn && settingsPanel && mainWrapper) {
+        elements.pomodoroSettingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.toggle('hidden');
+            mainWrapper.classList.toggle('hidden');
+
+            // Populate inputs
+            document.getElementById('pomo-work-duration').value = appState.pomodoro.workDuration;
+            document.getElementById('pomo-short-duration').value = appState.pomodoro.shortDuration;
+            document.getElementById('pomo-long-duration').value = appState.pomodoro.longDuration;
+        });
+    }
+
+    if (elements.pomodoroCloseSettings && settingsPanel && mainWrapper) {
+        elements.pomodoroCloseSettings.addEventListener('click', () => {
+            settingsPanel.classList.add('hidden');
+            mainWrapper.classList.remove('hidden');
+        });
+    }
+
+    if (elements.pomodoroSaveSettings && settingsPanel && mainWrapper) {
+        elements.pomodoroSaveSettings.addEventListener('click', () => {
+            const work = parseInt(document.getElementById('pomo-work-duration').value, 10);
+            const short = parseInt(document.getElementById('pomo-short-duration').value, 10);
+            const long = parseInt(document.getElementById('pomo-long-duration').value, 10);
+
+            if (work > 0 && short > 0 && long > 0) {
+                appState.pomodoro.workDuration = work;
+                appState.pomodoro.shortDuration = short;
+                appState.pomodoro.longDuration = long;
+                saveState();
+
+                settingsPanel.classList.add('hidden');
+                mainWrapper.classList.remove('hidden');
+
+                // Refresh timer display with new setting
+                resetTimerDisplay();
+            } else {
+                alert('Please enter valid positive durations.');
+            }
+        });
+    }
+
+    const updateMuteButtonDisplay = () => {
+        if (elements.pomodoroMuteBtn) {
+            const isMuted = appState.pomodoro.isMuted;
+            elements.pomodoroMuteBtn.innerHTML = isMuted 
+                ? '<i class="fas fa-volume-mute"></i>' 
+                : '<i class="fas fa-volume-up"></i>';
+            elements.pomodoroMuteBtn.title = isMuted ? 'Unmute Timer Sound' : 'Mute Timer Sound';
+        }
+    };
+
+    if (elements.pomodoroMuteBtn) {
+        elements.pomodoroMuteBtn.addEventListener('click', () => {
+            appState.pomodoro.isMuted = !appState.pomodoro.isMuted;
+            saveState();
+            updateMuteButtonDisplay();
+        });
+    }
+
+    // Initial setup
+    resetTimerDisplay();
+    updateStatsDisplay();
+    updateMuteButtonDisplay();
 }
