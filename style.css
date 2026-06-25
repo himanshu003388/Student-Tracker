@@ -145,6 +145,14 @@ header {
   align-items: center;
 }
 
+/* Header actions (theme toggle on desktop) */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+
 .logo {
   font-family: var(--font-display);
   font-size: 1.25rem;
@@ -1014,6 +1022,7 @@ td {
 }
 
 .quick-links-container .links-grid {
+  display: grid;
   flex: 1;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   align-content: start;
@@ -2030,7 +2039,6 @@ td {
     left: 0;
     width: 100%;
     background: var(--canvas);
-    padding: 1rem;
     border-bottom: 1px solid var(--hairline);
     gap: 0.25rem;
     box-shadow: var(--shadow-elevated);
@@ -2317,10 +2325,7 @@ td {
     gap: 0.5rem;
   }
 
-  .streak-badge {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.7rem;
-  }
+  /* .streak-badge duplicate removed — already declared above */
 
   /* ── Dashboard mobile layout ── */
   .dashboard-grid-layout {
@@ -2480,7 +2485,6 @@ td {
     margin-bottom: 0.625rem;
   }
 
-
   .logo {
     font-size: 1.1rem;
   }
@@ -2584,10 +2588,6 @@ td {
     font-size: 0.6rem;
   }
 
-  .welcome-card {
-    padding: 0.875rem 0.75rem;
-  }
-
   .welcome-card h1 {
     font-size: 1.25rem;
   }
@@ -2675,9 +2675,7 @@ td {
     font-size: 0.72rem;
   }
 
-  .habits-table-wrapper {
-    /* No negative margin — card has its own padding */
-  }
+  /* .habits-table-wrapper: No negative margin — card has its own padding */
 
   .habits-table th,
   .habits-table td {

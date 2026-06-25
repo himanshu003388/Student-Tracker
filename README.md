@@ -1,36 +1,148 @@
-# Student Tracker
+<div align="center">
 
-A modern, responsive personal productivity dashboard to track tasks, coding progress, habits, projects, and more - all in one place.
+# 🚀 Student Tracker
 
-## Features
+**A beautifully crafted personal productivity dashboard built for students.**  
+Track tasks, habits, money, and stay focused — all in one place, no backend required.
 
-- **Personalized Dashboard**: Real-time clock, motivational quotes, and aggregated daily stats.
-- **Quick Links**: Easily accessible and customizable links to coding platforms like LeetCode, GFG, GitHub, etc.
-- **Task Tracker**: A daily to-do list with filtering and persistent storage.
-- **Coding Tracker**: Log your daily coding problems and visualize your weekly progress with built-in charts.
-- **Habit Tracker & Streaks**: Maintain daily habits and build a productivity streak.
-- **Pomodoro Timer**: Stay focused with customizable work/break intervals and sound notifications.
-- **Notes Section**: Store important topics, interview questions, and learning summaries.
-- **Project Tracker**: Keep a record of your ongoing and completed projects with tech stacks and links.
-- **Placement Tracker**: Manage your internship and job applications with status tracking.
-- **Dark/Light Mode**: Seamlessly switch between themes.
-- **Data Export/Import**: Backup your data as a JSON file or move it to another device.
+<br/>
 
-## Tech Stack
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Chart.js](https://img.shields.io/badge/Chart.js-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
+[![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](./LICENSE)
 
-- **HTML5**: Semantic structure.
-- **CSS3**: Modern UI with CSS Variables, Flexbox, and Grid.
-- **JavaScript (Vanilla)**: Core logic and state management.
-- **Chart.js**: Data visualization.
-- **FontAwesome**: Icon library.
-- **LocalStorage**: Persistent data storage without a backend.
+<br/>
 
-## How to Run Locally
+> *"The secret of getting ahead is getting started."* — Mark Twain
 
-1.  Download the project files (`index.html`, `style.css`, `script.js`).
-2.  Open `index.html` in any modern web browser.
-3.  That's it! No build tools or servers required.
+</div>
 
-## License
+---
 
-MIT License - feel free to customize and use it for your own productivity journey!
+## ✨ Features at a Glance
+
+| Feature | Description |
+|---|---|
+| 🏠 **Dashboard** | Real-time clock, motivational quotes & daily stats overview |
+| ✅ **Task Tracker** | Daily to-do list with filters, search & persistent storage |
+| ⚡ **Quick Links** | One-click access to LeetCode, GitHub, GFG & custom URLs |
+| 🍅 **Pomodoro Timer** | Circular focus timer with work/break modes & sound alerts |
+| 📅 **Habit Tracker** | Monthly habit grid with streaks, charts & progress visualization |
+| 💰 **Money Tracker** | Income/expense logging with category charts & monthly reports |
+| 📝 **Notes & Snippets** | Searchable notes for topics, interview prep & summaries |
+| 🌗 **Dark / Light Mode** | Seamless theme switching with zero flicker on load |
+| 💾 **Export / Import** | Backup your entire data as JSON or restore it on any device |
+
+---
+
+## 🖥️ Sections Overview
+
+### 🏠 Dashboard
+The main hub of your productivity. At a glance you get:
+- **Live Clock & Date** — always know the time
+- **Motivational Quote** — a fresh quote to keep you going
+- **Daily Tasks** — add, search, filter and check off your to-dos
+- **Quick Links** — customizable icon grid for your most-visited sites
+- **Pomodoro Timer** — circular SVG countdown with Pomodoro, Short Break & Long Break modes
+- **Notes & Snippets** — a searchable card grid for all your learning notes
+
+### 📅 Habits
+- **Monthly Calendar Grid** — check off each habit for every day of the month
+- **🔥 Streak Counter** — watch your streak grow as you stay consistent
+- **Habit Progress Chart** — visualize how many habits you've completed per day
+
+### 💰 Money Tracker
+- **6 Summary Cards** — Total Income, Total Expense, Balance, and This Month's stats
+- **Quick Add Buttons** — log common expenses (Mess, Snacks, Travel, etc.) in one tap
+- **Transaction Form** — add income/expense with category, payment mode & notes
+- **Filterable History Table** — search & filter by month, category, and type
+- **Monthly Report** — top category, net savings, income vs expense breakdown
+- **Charts** — category-wise pie chart and 6-month spending bar chart
+
+---
+
+## 🛠️ Tech Stack
+
+```
+📦 Student Tracker
+ ┣ 📄 index.html      → Semantic HTML5 structure & layout
+ ┣ 🎨 style.css       → CSS Variables, Flexbox, Grid, animations
+ ┗ ⚙️  script.js      → Vanilla JS — state, events, LocalStorage, Chart.js
+```
+
+| Technology | Purpose |
+|---|---|
+| **HTML5** | Semantic structure, accessibility |
+| **CSS3** | CSS Variables, Flexbox, Grid, dark/light theming |
+| **Vanilla JavaScript** | All logic, state management & DOM updates |
+| **[Chart.js](https://www.chartjs.org/)** | Habit progress & spending data visualizations |
+| **[Font Awesome 6](https://fontawesome.com/)** | Icon library |
+| **[Google Fonts](https://fonts.google.com/)** | Inter, JetBrains Mono, Space Grotesk |
+| **LocalStorage** | Persistent client-side storage — zero backend needed |
+
+---
+
+## ⚡ Getting Started
+
+No installation, no build tools, no server — it's that simple.
+
+```bash
+# 1. Clone or download the repository
+git clone https://github.com/your-username/Student-Tracker.git
+
+# 2. Open in your browser
+# Simply double-click index.html OR drag it into any modern browser
+```
+
+> ✅ Works in Chrome, Firefox, Edge, Safari — any modern browser.
+
+---
+
+## 📁 Project Structure
+
+```
+Student-Tracker-main/
+├── index.html    # The entire app — single HTML file
+├── style.css     # All styles (~60 KB) with theming system
+├── script.js     # All logic (~80 KB) — modular & well-commented
+└── README.md     # You are here!
+```
+
+---
+
+## 🎨 Design Highlights
+
+- **Zero-flicker theme** — theme is applied before the page paints using an inline script
+- **CSS Custom Properties** — entire color system is token-based for easy theming
+- **Responsive Layout** — works on both desktop and mobile screens
+- **Circular Pomodoro SVG** — animated SVG progress ring for the focus timer
+- **Smooth Animations** — micro-interactions on cards, buttons and transitions
+
+---
+
+## 🗺️ Roadmap / Ideas
+
+- [ ] Weekly coding problem tracker with Chart.js bar graph
+- [ ] Placement / internship application tracker
+- [ ] Project portfolio tracker with tech stack tags
+- [ ] PWA support (offline + installable)
+- [ ] Cloud sync via Firebase or Supabase
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** — free to use, modify, and distribute.  
+See the [LICENSE](./LICENSE) file for details.
+
+---
+
+<div align="center">
+
+Made with ❤️ by **Himanshu**
+
+*If this project helped you, consider giving it a ⭐ on GitHub!*
+
+</div>
