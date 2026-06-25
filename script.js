@@ -1309,7 +1309,7 @@ function sanitizeAppState(data) {
     }
 
     // Preserve the seeding flag so deleted default links don't reappear on refresh
-    cleanState._linksSeeded = Boolean(data._linksSeeded);
+    cleanState._linksSeeded = data._linksSeeded;
 
     return cleanState;
 }
