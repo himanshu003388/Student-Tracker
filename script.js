@@ -1,16 +1,10 @@
 const DEFAULT_STATE = {
     theme: 'light',
     links: [
-        { id: 1, name: 'GitHub', url: 'https://github.com', icon: 'fab fa-github' },
-        { id: 2, name: 'LeetCode', url: 'https://leetcode.com', icon: 'fas fa-code' },
-        { id: 3, name: 'GeeksforGeeks', url: 'https://geeksforgeeks.org', icon: 'fas fa-laptop-code' },
-        { id: 4, name: 'LinkedIn', url: 'https://linkedin.com', icon: 'fab fa-linkedin' },
-        { id: 5, name: 'Stack Overflow', url: 'https://stackoverflow.com', icon: 'fab fa-stack-overflow' },
-        { id: 6, name: 'Codeforces', url: 'https://codeforces.com', icon: 'fas fa-trophy' },
-        { id: 7, name: 'HackerRank', url: 'https://hackerrank.com', icon: 'fab fa-hackerrank' },
-        { id: 8, name: 'CodeChef', url: 'https://codechef.com', icon: 'fas fa-utensils' },
-        { id: 9, name: 'YouTube', url: 'https://youtube.com', icon: 'fab fa-youtube' },
-        { id: 10, name: 'Dev.to', url: 'https://dev.to', icon: 'fab fa-dev' }
+        { id: 1, name: 'LinkedIn', url: 'https://linkedin.com', icon: 'fab fa-linkedin' },
+        { id: 2, name: 'GitHub', url: 'https://github.com', icon: 'fab fa-github' },
+        { id: 3, name: 'YouTube', url: 'https://youtube.com', icon: 'fab fa-youtube' },
+        { id: 4, name: 'LeetCode', url: 'https://leetcode.com', icon: 'fas fa-code' }
     ],
     tasks: [],
     habits: [],
@@ -125,16 +119,20 @@ const elements = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Seed default links if not done yet
-    if (!appState._linksSeeded) {
-        const existingNames = new Set(appState.links.map(l => l.name));
-        DEFAULT_STATE.links.forEach(link => {
-            if (!existingNames.has(link.name)) {
-                const maxId = appState.links.reduce((max, l) => Math.max(max, l.id), 0);
-                appState.links.push({ ...link, id: maxId + 1 });
-            }
-        });
-        appState._linksSeeded = true;
+    // Seed / reset default links to the current default set (version-gated)
+    if (appState._linksSeeded !== 'v2') {
+        // Keep any user-added links (those not in old defaults by name), then prepend new defaults
+        const defaultNames = new Set(DEFAULT_STATE.links.map(l => l.name));
+        const oldDefaultNames = new Set([
+            'GitHub','LeetCode','GeeksforGeeks','LinkedIn','Stack Overflow',
+            'Codeforces','HackerRank','CodeChef','YouTube','Dev.to'
+        ]);
+        // Preserve only custom (non-default) links the user may have added
+        const customLinks = appState.links.filter(l => !oldDefaultNames.has(l.name));
+        let maxId = DEFAULT_STATE.links.reduce((max, l) => Math.max(max, l.id), 0);
+        customLinks.forEach(l => { l.id = ++maxId; });
+        appState.links = [...DEFAULT_STATE.links, ...customLinks];
+        appState._linksSeeded = 'v2';
         saveState();
     }
 
@@ -699,13 +697,19 @@ function renderTasks() {
         filteredTasks = filteredTasks.filter(t => t.text.toLowerCase().includes(searchQuery));
     }
 
+    // Only allow drag reorder when showing the full unfiltered list
+    const isFiltered = filter !== 'all' || searchQuery !== '';
+
     elements.taskList.innerHTML = filteredTasks.map(task => `
-        <li class="task-item ${task.completed ? 'completed' : ''}">
+        <li class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}" ${!isFiltered ? 'draggable="true"' : ''}>
+            ${!isFiltered ? `<div class="task-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>` : ''}
             <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
             <span>${escapeHtml(task.text)}</span>
             <button class="delete-task" onclick="deleteTask(${task.id})"><i class="fas fa-trash"></i></button>
         </li>
     `).join('');
+
+    if (!isFiltered) initTasksDragAndDrop();
 }
 
 const taskSearch = document.getElementById('task-search');
@@ -737,6 +741,56 @@ window.deleteTask = (id) => {
     saveState();
     renderTasks();
 };
+
+
+
+function reorderTask(srcId, targetId) {
+    const tasks = appState.tasks;
+    const srcIndex = tasks.findIndex(t => String(t.id) === String(srcId));
+    const targetIndex = tasks.findIndex(t => String(t.id) === String(targetId));
+    if (srcIndex === -1 || targetIndex === -1) return;
+    const [moved] = tasks.splice(srcIndex, 1);
+    tasks.splice(targetIndex, 0, moved);
+    saveState();
+    renderTasks();
+}
+
+function initTasksDragAndDrop() {
+    const list = elements.taskList;
+    if (!list) return;
+    let dragSrc = null;
+
+    list.querySelectorAll('.task-item[draggable]').forEach(item => {
+        item.addEventListener('dragstart', e => {
+            dragSrc = item;
+            item.classList.add('task-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', item.dataset.id);
+        });
+        item.addEventListener('dragend', () => {
+            dragSrc = null;
+            item.classList.remove('task-dragging');
+            list.querySelectorAll('.task-item').forEach(i => i.classList.remove('task-drag-over'));
+        });
+        item.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (item !== dragSrc) {
+                list.querySelectorAll('.task-item').forEach(i => i.classList.remove('task-drag-over'));
+                item.classList.add('task-drag-over');
+            }
+        });
+        item.addEventListener('dragleave', () => {
+            item.classList.remove('task-drag-over');
+        });
+        item.addEventListener('drop', e => {
+            e.preventDefault();
+            item.classList.remove('task-drag-over');
+            if (!dragSrc || dragSrc === item) return;
+            reorderTask(dragSrc.dataset.id, item.dataset.id);
+        });
+    });
+}
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
