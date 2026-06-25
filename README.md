@@ -22,7 +22,7 @@ An elegant workspace to manage daily tasks, track habits, log finances, and stay
 *   **Live Clock & Weather-ready Widget:** Keeps you updated on the current date and time.
 *   **Daily Tasks Workspace:** Easily add, edit, and filter your to-dos. Supports interactive **Drag-and-Drop** reordering to prioritize tasks.
 *   **Quick Links Portal:** Fully customizable bookmark dashboard. Change URLs, add icons, and sort via **Drag-and-Drop**.
-*   **Pomodoro Focus Timer:** Beautiful circular SVG countdown with custom time modes (Focus, Short Break, Long Break) and interactive audio alerts.
+*   **Pomodoro Focus Timer:** Beautiful circular SVG countdown with custom time modes (Focus, Short Break, Long Break), optimized visual progress ring opacity, and interactive audio alerts.
 *   **Rich Notes & Snippets:** A responsive card-based notepad with dynamic search and instant filtering.
 
 ### 📅 Habit Tracker & Analytics
@@ -36,6 +36,7 @@ An elegant workspace to manage daily tasks, track habits, log finances, and stay
 *   **One-Tap Quick Logging:** Quick buttons for common student expenses (Mess, Snacks, Travel, Books, etc.).
 *   **Transaction Register:** Detailed ledger sorting category, payment mode, and tags.
 *   **Visual Analytics:** Interactive pie charts and 6-month budget bars powered by Chart.js.
+*   **Auto-Adjusting & Responsive Layout:** Dynamic layout alignment on desktop to prevent empty space, paired with a fully optimized mobile layout for seamless logging on the go.
 
 ### 🌓 Premium Custom Theme System
 *   **Vibrant Accent Coloring:** High-contrast blue colors (`#0088cc`), custom glow filters, and animated gradient accents.
