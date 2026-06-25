@@ -1,31 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Background circle with gradient -->
-  <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="rocketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#e0e7ff;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-  <!-- Circle background -->
-  <circle cx="32" cy="32" r="32" fill="url(#bgGrad)" />
-  <!-- Rocket body (Font Awesome fa-rocket shape) -->
-  <!-- Rocket nose cone -->
-  <path d="M32 8 C32 8, 22 18, 20 30 L44 30 C42 18, 32 8, 32 8 Z" fill="url(#rocketGrad)" />
-  <!-- Rocket body -->
-  <rect x="20" y="28" width="24" height="16" rx="2" fill="url(#rocketGrad)" />
-  <!-- Window -->
-  <circle cx="32" cy="34" r="4" fill="#6366f1" />
-  <circle cx="32" cy="34" r="2.5" fill="#a5b4fc" />
-  <!-- Left fin -->
-  <path d="M20 36 L13 46 L20 44 Z" fill="#c4b5fd" />
-  <!-- Right fin -->
-  <path d="M44 36 L51 46 L44 44 Z" fill="#c4b5fd" />
-  <!-- Exhaust flames -->
-  <ellipse cx="28" cy="46" rx="3" ry="5" fill="#fbbf24" opacity="0.9"/>
-  <ellipse cx="36" cy="46" rx="3" ry="5" fill="#fbbf24" opacity="0.9"/>
-  <ellipse cx="32" cy="47" rx="3.5" ry="6" fill="#f97316" opacity="0.8"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <!-- Black rounded square background -->
+  <rect width="600" height="600" rx="80" ry="80" fill="#000000"/>
+
+  <!-- Rocket icon: white outline, tilted ~45°, matching the provided image -->
+  <g transform="translate(300,300) rotate(-45) translate(-130,-140)" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Rocket body (elongated oval/lens) -->
+    <path d="M130 30 C190 30, 240 75, 240 145 C240 215, 190 260, 130 260 C70 260, 20 215, 20 145 C20 75, 70 30, 130 30 Z"/>
+    <!-- Porthole/window -->
+    <circle cx="155" cy="120" r="32"/>
+    <!-- Left fin/booster -->
+    <path d="M50 210 C30 230, 10 270, 20 290 C40 285, 75 265, 90 240"/>
+    <!-- Right fin/booster -->
+    <path d="M210 210 C230 230, 250 270, 240 290 C220 285, 185 265, 170 240"/>
+    <!-- Exhaust nozzle / bottom detail -->
+    <path d="M90 255 C95 275, 110 285, 130 285 C150 285, 165 275, 170 255"/>
+  </g>
 </svg>
