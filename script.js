@@ -126,8 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Keep any user-added links (those not in old defaults by name), then prepend new defaults
         const defaultNames = new Set(DEFAULT_STATE.links.map(l => l.name));
         const oldDefaultNames = new Set([
-            'GitHub','LeetCode','GeeksforGeeks','LinkedIn','Stack Overflow',
-            'Codeforces','HackerRank','CodeChef','YouTube','Dev.to'
+            'GitHub', 'LeetCode', 'GeeksforGeeks', 'LinkedIn', 'Stack Overflow',
+            'Codeforces', 'HackerRank', 'CodeChef', 'YouTube', 'Dev.to'
         ]);
         // Preserve only custom (non-default) links the user may have added
         const customLinks = appState.links.filter(l => !oldDefaultNames.has(l.name));
@@ -186,7 +186,7 @@ function renderAll() {
 function initTheme() {
     document.body.className = appState.theme === 'dark' ? 'dark-mode' : 'light-mode';
     const meta = document.getElementById('theme-color-meta');
-    if (meta) meta.content = appState.theme === 'dark' ? '#0a0a0a' : '#fafafa';
+    if (meta) meta.content = appState.theme === 'dark' ? '#050505' : '#f5f5f5';
     if (elements.themeToggle) {
         elements.themeToggle.classList.toggle('dark', appState.theme === 'dark');
     }
@@ -194,8 +194,8 @@ function initTheme() {
 
 function updateChartTheme() {
     const textColor = appState.theme === 'dark' ? '#f5f5f5' : '#171717';
-    const gridColor = appState.theme === 'dark' ? '#2a2a2a' : '#ebebeb';
-    const tickColor = appState.theme === 'dark' ? '#6b6b6b' : '#888888';
+    const gridColor = appState.theme === 'dark' ? '#262626' : '#e5e5e5';
+    const tickColor = appState.theme === 'dark' ? '#525252' : '#737373';
 
     if (expensePieChart) {
         expensePieChart.options.plugins.legend.labels.color = textColor;
@@ -1949,6 +1949,19 @@ function updateMonthlyReport() {
     if (elements.reportTopCategory) elements.reportTopCategory.textContent = topCat;
 }
 
+const categoryColors = {
+    'Mess': '#0088CC', // Jarvis Blue
+    'Diet': '#33a3ff', // Sky Blue
+    'Protein supplements': '#006699', // Deep Blue
+    'Gym': '#004466', // Midnight Blue
+    'Snacks': '#525252', // Charcoal
+    'Travel': '#737373', // Medium grey
+    'Hostel Fees': '#a3a3a3', // Light grey
+    'Medical': '#d4d4d4', // Soft grey
+    'Stationery': '#e5e5e5', // Off-white/light-grey
+    'Other': '#1c1c1c' // Deep charcoal
+};
+
 function initMoneyCharts() {
     const pieEl = document.getElementById('expense-pie-chart');
     const barEl = document.getElementById('spending-bar-chart');
@@ -1957,16 +1970,20 @@ function initMoneyCharts() {
     const pieCtx = pieEl.getContext('2d');
     const barCtx = barEl.getContext('2d');
 
+    const textColor = appState.theme === 'dark' ? '#f5f5f5' : '#171717';
+    const gridColor = appState.theme === 'dark' ? '#262626' : '#e5e5e5';
+    const tickColor = appState.theme === 'dark' ? '#525252' : '#737373';
+
     expensePieChart = new Chart(pieCtx, {
         type: 'doughnut',
-        data: { labels: [], datasets: [{ data: [], backgroundColor: ['#171717', '#4d4d4d', '#888888', '#a1a1a1', '#d4d4d4', '#2d2d2d', '#6b6b6b', '#b0b0b0', '#ebebeb'] }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, color: appState.theme === 'dark' ? '#f1f5f9' : '#171717' } } } }
+        data: { labels: [], datasets: [{ data: [], backgroundColor: [] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, color: textColor } } } }
     });
 
     spendingBarChart = new Chart(barCtx, {
         type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Expense', data: [], backgroundColor: '#171717' }, { label: 'Income', data: [], backgroundColor: '#888888' }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: appState.theme === 'dark' ? '#f1f5f9' : '#171717', boxWidth: 12 } } }, scales: { y: { beginAtZero: true, grid: { color: appState.theme === 'dark' ? '#334155' : '#ebebeb' }, ticks: { color: appState.theme === 'dark' ? '#94a3b8' : '#888888' } }, x: { grid: { display: false }, ticks: { color: appState.theme === 'dark' ? '#94a3b8' : '#888888' } } } }
+        data: { labels: [], datasets: [{ label: 'Expense', data: [], backgroundColor: '#525252' }, { label: 'Income', data: [], backgroundColor: '#0088CC' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor, boxWidth: 12 } } }, scales: { y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } }, x: { grid: { display: false }, ticks: { color: tickColor } } } }
     });
 }
 
@@ -1980,6 +1997,7 @@ function updateMoneyCharts() {
 
     expensePieChart.data.labels = Object.keys(catMap);
     expensePieChart.data.datasets[0].data = Object.values(catMap);
+    expensePieChart.data.datasets[0].backgroundColor = Object.keys(catMap).map(cat => categoryColors[cat] || '#737373');
     expensePieChart.options.plugins.legend.labels.color = appState.theme === 'dark' ? '#f5f5f5' : '#171717';
     expensePieChart.update();
 
@@ -2016,9 +2034,9 @@ function updateMoneyCharts() {
 function initHabitChartTheme() {
     return {
         textColor: appState.theme === 'dark' ? '#f5f5f5' : '#171717',
-        gridColor: appState.theme === 'dark' ? '#2a2a2a' : '#ebebeb',
-        tickColor: appState.theme === 'dark' ? '#6b6b6b' : '#888888',
-        lineColor: appState.theme === 'dark' ? '#ffffff' : '#171717'
+        gridColor: appState.theme === 'dark' ? '#262626' : '#e5e5e5',
+        tickColor: appState.theme === 'dark' ? '#525252' : '#737373',
+        lineColor: appState.theme === 'dark' ? '#0088CC' : '#0088CC'
     };
 }
 
@@ -2068,7 +2086,7 @@ function initHabitsChart() {
                     label: 'Daily completion %',
                     data: values,
                     borderColor: theme.lineColor,
-                    backgroundColor: appState.theme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(23,23,23,0.10)',
+                    backgroundColor: appState.theme === 'dark' ? 'rgba(0, 136, 204, 0.04)' : 'rgba(0, 136, 204, 0.04)',
                     borderWidth: 2,
                     tension: 0.35,
                     pointRadius: 2,
@@ -2130,7 +2148,7 @@ function updateHabitGraph() {
     habitsChart.options.plugins.legend.labels.color = theme.tickColor;
     habitsChart.data.datasets[0].borderColor = theme.lineColor;
     habitsChart.data.datasets[0].backgroundColor =
-        appState.theme === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(23,23,23,0.10)';
+        appState.theme === 'dark' ? 'rgba(0, 136, 204, 0.04)' : 'rgba(0, 136, 204, 0.04)';
 
     habitsChart.options.scales.y.grid.color = theme.gridColor;
     habitsChart.options.scales.y.ticks.color = theme.tickColor;
@@ -2193,6 +2211,11 @@ let pomodoroCurrentMode = 'work';
 let pomodoroIsRunning = false;
 
 function initPomodoro() {
+    const container = document.querySelector('.pomodoro-container');
+    if (container) {
+        container.classList.remove('mode-work', 'mode-short', 'mode-long');
+        container.classList.add('mode-work');
+    }
     // Mode duration helper
     const getModeDuration = (mode) => {
         if (mode === 'work') return appState.pomodoro.workDuration * 60;
@@ -2238,30 +2261,30 @@ function initPomodoro() {
         if (appState.pomodoro.isMuted) return;
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
+
             const playBeep = (startTime) => {
                 const playTone = (freq, vol) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    
+
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(freq, startTime);
-                    
+
                     gain.gain.setValueAtTime(0, startTime);
                     gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
                     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.12);
-                    
+
                     osc.start(startTime);
                     osc.stop(startTime + 0.15);
                 };
-                
+
                 // Play soft dual-tone harmony
                 playTone(659.25, 0.08); // E5
                 playTone(880.00, 0.08); // A5
             };
-            
+
             const now = audioCtx.currentTime;
             // Schedule 4 double-beeps (soft alarm ringtone)
             for (let i = 0; i < 4; i++) {
@@ -2353,6 +2376,13 @@ function initPomodoro() {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
 
+        // Update container mode class
+        const container = document.querySelector('.pomodoro-container');
+        if (container) {
+            container.classList.remove('mode-work', 'mode-short', 'mode-long');
+            container.classList.add(`mode-${mode}`);
+        }
+
         // Update label
         if (elements.pomodoroLabel) {
             if (mode === 'work') elements.pomodoroLabel.textContent = 'WORK TIME';
@@ -2433,8 +2463,8 @@ function initPomodoro() {
     const updateMuteButtonDisplay = () => {
         if (elements.pomodoroMuteBtn) {
             const isMuted = appState.pomodoro.isMuted;
-            elements.pomodoroMuteBtn.innerHTML = isMuted 
-                ? '<i class="fas fa-volume-mute"></i>' 
+            elements.pomodoroMuteBtn.innerHTML = isMuted
+                ? '<i class="fas fa-volume-mute"></i>'
                 : '<i class="fas fa-volume-up"></i>';
             elements.pomodoroMuteBtn.title = isMuted ? 'Unmute Timer Sound' : 'Mute Timer Sound';
         }

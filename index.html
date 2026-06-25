@@ -13,7 +13,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <meta name="theme-color" content="#171717" id="theme-color-meta">
+    <meta name="theme-color" content="#f5f5f5" id="theme-color-meta">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -27,7 +27,7 @@
             window.initialTheme = n;
             document.body.className = n === 'dark' ? 'dark-mode' : 'light-mode';
             var o = document.getElementById('theme-color-meta');
-            if (o) o.content = n === 'dark' ? '#0a0a0a' : '#fafafa';
+            if (o) o.content = n === 'dark' ? '#050505' : '#f5f5f5';
         })();
     </script>
     <header>
@@ -119,7 +119,8 @@
                                     <span class="pomodoro-card-time" id="pomodoro-card-time"></span>
                                     <span class="pomodoro-card-date" id="pomodoro-card-date"></span>
                                 </div>
-                                <button id="pomodoro-mute-btn" class="btn-icon" title="Mute Timer Sound"><i class="fas fa-volume-up"></i></button>
+                                <button id="pomodoro-mute-btn" class="btn-icon" title="Mute Timer Sound"><i
+                                        class="fas fa-volume-up"></i></button>
                                 <button id="pomodoro-settings-btn" class="btn-icon" title="Timer Settings"><i
                                         class="fas fa-cog"></i></button>
                             </div>
@@ -234,7 +235,8 @@
 
             <!-- Habit Progress Card -->
             <div class="chart-card card habits-graph-card mt-20">
-                <h3 class="habits-graph-title" style="margin-bottom: 1.25rem;"><i class="fas fa-chart-line"></i> Habit Progress</h3>
+                <h3 class="habits-graph-title" style="margin-bottom: 1.25rem;"><i class="fas fa-chart-line"></i> Habit
+                    Progress</h3>
                 <div class="chart-container habits-chart-container">
                     <canvas id="habits-chart"></canvas>
                 </div>
@@ -246,8 +248,10 @@
                     <!-- Weekly Targets Card -->
                     <div class="targets-card card">
                         <div class="section-header" style="margin-bottom: 1.25rem;">
-                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-week" style="color: var(--weekly-color); margin-right: 0.5rem;"></i>Weekly Targets</h3>
-                            <button id="add-weekly-target-btn" class="btn-primary small" title="Add Weekly Target"><i class="fas fa-plus"></i></button>
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-week"
+                                    style="color: var(--weekly-color); margin-right: 0.5rem;"></i>Weekly Targets</h3>
+                            <button id="add-weekly-target-btn" class="btn-primary small" title="Add Weekly Target"><i
+                                    class="fas fa-plus"></i></button>
                         </div>
                         <ul id="weekly-targets-list" class="task-list targets-checklist" style="margin: 0; padding: 0;">
                             <!-- Dynamic content -->
@@ -257,10 +261,13 @@
                     <!-- Monthly Targets Card -->
                     <div class="targets-card card">
                         <div class="section-header" style="margin-bottom: 1.25rem;">
-                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-alt" style="color: var(--monthly-color); margin-right: 0.5rem;"></i>Monthly Targets</h3>
-                            <button id="add-monthly-target-btn" class="btn-primary small" title="Add Monthly Target"><i class="fas fa-plus"></i></button>
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-alt"
+                                    style="color: var(--monthly-color); margin-right: 0.5rem;"></i>Monthly Targets</h3>
+                            <button id="add-monthly-target-btn" class="btn-primary small" title="Add Monthly Target"><i
+                                    class="fas fa-plus"></i></button>
                         </div>
-                        <ul id="monthly-targets-list" class="task-list targets-checklist" style="margin: 0; padding: 0;">
+                        <ul id="monthly-targets-list" class="task-list targets-checklist"
+                            style="margin: 0; padding: 0;">
                             <!-- Dynamic content -->
                         </ul>
                     </div>
@@ -268,26 +275,32 @@
 
                 <!-- Circular Analytics Card -->
                 <div class="analytics-card card">
-                    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem;"><i class="fas fa-chart-pie" style="margin-right: 0.5rem;"></i>Target Progress</h3>
+                    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem;"><i class="fas fa-chart-pie"
+                            style="margin-right: 0.5rem;"></i>Target Progress</h3>
                     <div class="circular-progress-container">
                         <div class="svg-ring-wrap">
                             <svg width="180" height="180" viewBox="0 0 180 180" class="concentric-rings">
                                 <!-- Background rings -->
-                                <circle class="ring-bg outer-ring-bg" cx="90" cy="90" r="70" stroke-width="10" fill="transparent" />
-                                <circle class="ring-bg inner-ring-bg" cx="90" cy="90" r="48" stroke-width="10" fill="transparent" />
-                                
+                                <circle class="ring-bg outer-ring-bg" cx="90" cy="90" r="70" stroke-width="10"
+                                    fill="transparent" />
+                                <circle class="ring-bg inner-ring-bg" cx="90" cy="90" r="48" stroke-width="10"
+                                    fill="transparent" />
+
                                 <!-- Progress rings -->
-                                <circle class="ring-progress outer-ring" id="weekly-progress-ring" cx="90" cy="90" r="70" stroke-width="10" fill="transparent"
-                                        stroke-dasharray="439.82" stroke-dashoffset="439.82" stroke-linecap="round" />
-                                <circle class="ring-progress inner-ring" id="monthly-progress-ring" cx="90" cy="90" r="48" stroke-width="10" fill="transparent"
-                                        stroke-dasharray="301.59" stroke-dashoffset="301.59" stroke-linecap="round" />
+                                <circle class="ring-progress outer-ring" id="weekly-progress-ring" cx="90" cy="90"
+                                    r="70" stroke-width="10" fill="transparent" stroke-dasharray="439.82"
+                                    stroke-dashoffset="439.82" stroke-linecap="round" />
+                                <circle class="ring-progress inner-ring" id="monthly-progress-ring" cx="90" cy="90"
+                                    r="48" stroke-width="10" fill="transparent" stroke-dasharray="301.59"
+                                    stroke-dashoffset="301.59" stroke-linecap="round" />
                             </svg>
                             <div class="ring-center-text">
                                 <div class="ring-percent-item weekly-txt">
                                     <span class="dot weekly-dot"></span>W: <strong id="weekly-ring-percent">0%</strong>
                                 </div>
                                 <div class="ring-percent-item monthly-txt">
-                                    <span class="dot monthly-dot"></span>M: <strong id="monthly-ring-percent">0%</strong>
+                                    <span class="dot monthly-dot"></span>M: <strong
+                                        id="monthly-ring-percent">0%</strong>
                                 </div>
                             </div>
                         </div>
