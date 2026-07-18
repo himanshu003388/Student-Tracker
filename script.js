@@ -231,9 +231,14 @@ let uploadFolderIdCache = null;
 async function getOrCreateUploadFolder() {
     if (uploadFolderIdCache) return uploadFolderIdCache;
     try {
-        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='Student Tracker Uploads' and mimeType='application/vnd.google-apps.folder' and trashed=false`, {
+        const q = encodeURIComponent("name='Student Tracker Uploads' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error('Failed to search folder: ' + err);
+        }
         const data = await res.json();
         if (data.files && data.files.length > 0) {
             uploadFolderIdCache = data.files[0].id;
@@ -252,6 +257,10 @@ async function getOrCreateUploadFolder() {
                 mimeType: 'application/vnd.google-apps.folder'
             })
         });
+        if (!createRes.ok) {
+            const err = await createRes.text();
+            throw new Error('Failed to create folder: ' + err);
+        }
         const createData = await createRes.json();
         if (createData.id) {
             uploadFolderIdCache = createData.id;
@@ -259,6 +268,7 @@ async function getOrCreateUploadFolder() {
         }
     } catch (e) {
         console.error('Error creating upload folder:', e);
+        throw e;
     }
     return null;
 }
@@ -306,11 +316,17 @@ async function uploadFileToDrive(file) {
                     body: body
                 });
                 
+                if (!res.ok) {
+                    const err = await res.text();
+                    reject(new Error(`Upload failed HTTP ${res.status}: ${err}`));
+                    return;
+                }
+                
                 const data = await res.json();
                 if (data.id) {
                     resolve(data);
                 } else {
-                    reject(data);
+                    reject(new Error("No ID in response"));
                 }
             } catch (err) {
                 reject(err);
@@ -1696,7 +1712,7 @@ if (globalAddFiles) {
                 });
             } catch (err) {
                 console.error("Upload error", err);
-                alert("Failed to upload " + files[i].name);
+                alert("Failed to upload " + files[i].name + "\nError: " + (err.message || JSON.stringify(err)));
             }
         }
         
