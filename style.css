@@ -1938,6 +1938,12 @@ td {
   padding-right: 4px;
 }
 
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
 .note-card {
   background: var(--canvas-soft);
   padding: 1.5rem;
@@ -2027,6 +2033,9 @@ td {
   background: var(--canvas);
   width: 90%;
   max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--radius-xl);
   border: 1px solid var(--hairline);
   box-shadow: var(--shadow-modal);
@@ -2061,6 +2070,7 @@ td {
 
 .modal-body {
   padding: 1.5rem;
+  overflow-y: auto;
 }
 
 .close-modal {
@@ -2711,6 +2721,11 @@ td {
   .notes-grid {
     max-height: none;
     gap: 0.625rem;
+  }
+
+  .documents-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
   }
 
   .notes-container.card .section-header {
