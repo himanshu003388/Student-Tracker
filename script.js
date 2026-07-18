@@ -1689,6 +1689,27 @@ if (document.getElementById('note-search')) {
 }
 
 window.deleteNote = (id) => {
+    const note = appState.notes.find(n => n.id === id);
+    if (note && note.attachments && note.attachments.length > 0) {
+        if (!confirm('This note contains attachments. Are you sure you want to delete it and remove the files from Google Drive?')) {
+            return;
+        }
+        if (accessToken && navigator.onLine) {
+            note.attachments.forEach(async (att) => {
+                try {
+                    await fetch(`https://www.googleapis.com/drive/v3/files/${att.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                } catch(e) {
+                    console.error("Failed to delete attachment from drive:", e);
+                }
+            });
+        }
+    } else {
+        if (!confirm('Are you sure you want to delete this note?')) return;
+    }
+
     appState.notes = appState.notes.filter(n => n.id !== id);
     saveState();
     renderNotes();
