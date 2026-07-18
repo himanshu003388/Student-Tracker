@@ -204,8 +204,9 @@ async function syncDriveFolders(data) {
         if (!data.documents) data.documents = [];
         const driveDocIds = new Set(driveDocs.map(f => f.id));
         
-        // Remove locally deleted documents (ones missing from Drive)
-        data.documents = data.documents.filter(d => driveDocIds.has(d.id));
+        // Remove locally deleted documents (ones missing from Drive). Give 60s grace period for new files.
+        const NOW = Date.now();
+        data.documents = data.documents.filter(d => driveDocIds.has(d.id) || (d._createdTS && (NOW - d._createdTS < 60000)));
         
         // Add new files from Drive
         const existingDocIds = new Set(data.documents.map(d => d.id));
@@ -2441,7 +2442,8 @@ window.createNewFolder = async () => {
             mimeType: 'application/vnd.google-apps.folder',
             thumbData: null,
             dateAdded: getLocalDateKey(),
-            parentId: currentFolderId
+            parentId: currentFolderId,
+            _createdTS: Date.now()
         });
         saveState();
         renderDocuments();
@@ -2636,7 +2638,8 @@ if (uploadDocInput) {
                     mimeType: files[i].type,
                     thumbData: thumbData,
                     dateAdded: getLocalDateKey(),
-                    parentId: currentFolderId
+                    parentId: currentFolderId,
+                    _createdTS: Date.now()
                 });
             } catch (err) {
                 console.error("Upload error", err);
