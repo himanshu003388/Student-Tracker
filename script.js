@@ -1700,7 +1700,7 @@ if (globalAddFiles) {
         }
         
         if (attachments.length > 0) {
-            const noteTitle = attachments.length === 1 ? attachments[0].name : `${attachments.length} Uploaded Files`;
+            const noteTitle = attachments.length === 1 ? attachments[0].name.replace(/\.[^/.]+$/, "") : `${attachments.length} Uploaded Files`;
             appState.notes.push({
                 id: Date.now(),
                 title: noteTitle,
