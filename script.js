@@ -54,7 +54,7 @@ try {
 
 // --- Google Drive Sync Logic ---
 const CLIENT_ID = '761589741235-437vr573qdoh8h8q0e497g74a8d6rao2.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
 
 let tokenClient;
 let accessToken = null;
@@ -224,6 +224,99 @@ async function getDriveFileId() {
         console.error('Error getting drive file id:', e);
     }
     return null;
+}
+
+let uploadFolderIdCache = null;
+
+async function getOrCreateUploadFolder() {
+    if (uploadFolderIdCache) return uploadFolderIdCache;
+    try {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='Student Tracker Uploads' and mimeType='application/vnd.google-apps.folder' and trashed=false`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+            uploadFolderIdCache = data.files[0].id;
+            return uploadFolderIdCache;
+        }
+        
+        // Create folder
+        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: 'Student Tracker Uploads',
+                mimeType: 'application/vnd.google-apps.folder'
+            })
+        });
+        const createData = await createRes.json();
+        if (createData.id) {
+            uploadFolderIdCache = createData.id;
+            return uploadFolderIdCache;
+        }
+    } catch (e) {
+        console.error('Error creating upload folder:', e);
+    }
+    return null;
+}
+
+async function uploadFileToDrive(file) {
+    if (!accessToken) throw new Error('Not authenticated');
+    
+    const folderId = await getOrCreateUploadFolder();
+    if (!folderId) throw new Error('Could not get upload folder');
+
+    const metadata = {
+        name: file.name,
+        parents: [folderId]
+    };
+
+    const boundary = '-------314159265358979323846';
+    const delimiter = "\r\n--" + boundary + "\r\n";
+    const close_delim = "\r\n--" + boundary + "--";
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+        reader.onload = async () => {
+            try {
+                const metadataBlob = new Blob([
+                    delimiter,
+                    'Content-Type: application/json\r\n\r\n',
+                    JSON.stringify(metadata),
+                    delimiter,
+                    `Content-Type: ${file.type}\r\n\r\n`
+                ], { type: 'text/plain' });
+                
+                const fileBlob = new Blob([reader.result]);
+                const closeBlob = new Blob([close_delim], { type: 'text/plain' });
+
+                const body = new Blob([metadataBlob, fileBlob, closeBlob]);
+
+                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink', {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': `multipart/related; boundary=${boundary}`
+                    },
+                    body: body
+                });
+                
+                const data = await res.json();
+                if (data.id) {
+                    resolve(data);
+                } else {
+                    reject(data);
+                }
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = reject;
+    });
 }
 
 // Auto-sync when returning to the tab
@@ -1474,11 +1567,22 @@ function renderNotes() {
                 </div>
             `;
         } else {
-            elements.notesGrid.innerHTML = filteredNotes.map(note => `
+            elements.notesGrid.innerHTML = filteredNotes.map(note => {
+                let attachmentsHtml = '';
+                if (note.attachments && note.attachments.length > 0) {
+                    attachmentsHtml = '<div class="note-attachments" style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">';
+                    note.attachments.forEach(att => {
+                        const icon = att.mimeType && att.mimeType.includes('pdf') ? 'fa-file-pdf' : 'fa-image';
+                        attachmentsHtml += `<a href="${att.url}" target="_blank" class="attachment-badge" style="background: var(--canvas-soft); padding: 0.3rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--link); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid var(--border-color);"><i class="fas ${icon}"></i> ${escapeHtml(att.name)}</a>`;
+                    });
+                    attachmentsHtml += '</div>';
+                }
+                return `
                 <div class="note-card">
                     <h4>${escapeHtml(note.title)}</h4>
                     <p>${escapeHtml(note.content).replace(/\n/g, '<br>')}</p>
-                    <div class="note-footer">
+                    ${attachmentsHtml}
+                    <div class="note-footer" style="margin-top: 1rem;">
                         <span>${escapeHtml(note.date)}</span>
                         <div>
                             <button class="btn-text" onclick="editNote(${note.id})"><i class="fas fa-edit"></i></button>
@@ -1486,7 +1590,7 @@ function renderNotes() {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
     }
 }
@@ -1514,14 +1618,51 @@ window.editNote = (id) => {
                 <label>Content</label>
                 <textarea id="edit-note-content" rows="5" required>${escapeHtml(note.content)}</textarea>
             </div>
-            <button type="submit" class="btn-primary block">Save Changes</button>
+            <div class="form-group">
+                <label>Attach PDF/Images</label>
+                <input type="file" id="edit-note-attachments" accept=".pdf,image/*" multiple style="margin-top: 0.5rem;">
+                <small id="edit-upload-status" style="display: block; margin-top: 0.5rem; color: var(--link); font-weight: 500;"></small>
+            </div>
+            <button type="submit" id="edit-save-btn" class="btn-primary block" style="margin-top: 1rem;">Save Changes</button>
         </form>
     `);
 
-    document.getElementById('edit-note-form').addEventListener('submit', (e) => {
+    document.getElementById('edit-note-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = document.getElementById('edit-save-btn');
+        const statusText = document.getElementById('edit-upload-status');
+        const fileInput = document.getElementById('edit-note-attachments');
+        
+        let newAttachments = [];
+        if (fileInput.files.length > 0) {
+            if (!accessToken) {
+                alert("Please wait for Google Drive to connect, or sign in to upload files.");
+                return;
+            }
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+            statusText.textContent = 'Uploading files to Google Drive, please wait...';
+            for (let i = 0; i < fileInput.files.length; i++) {
+                try {
+                    const fileData = await uploadFileToDrive(fileInput.files[i]);
+                    newAttachments.push({
+                        id: fileData.id,
+                        name: fileData.name,
+                        url: fileData.webViewLink,
+                        mimeType: fileInput.files[i].type
+                    });
+                } catch (err) {
+                    console.error("Upload error", err);
+                    alert("Failed to upload " + fileInput.files[i].name);
+                }
+            }
+        }
+        
         note.title = document.getElementById('edit-note-title').value.trim();
         note.content = document.getElementById('edit-note-content').value.trim();
+        if (!note.attachments) note.attachments = [];
+        note.attachments = note.attachments.concat(newAttachments);
+        
         saveState();
         renderNotes();
         closeModal();
@@ -1541,17 +1682,52 @@ if (addNoteBtn) {
                     <label>Content</label>
                     <textarea id="note-content" rows="5" required></textarea>
                 </div>
-                <button type="submit" class="btn-primary block">Save Note</button>
+                <div class="form-group">
+                    <label>Attach PDF/Images</label>
+                    <input type="file" id="note-attachments" accept=".pdf,image/*" multiple style="margin-top: 0.5rem;">
+                    <small id="upload-status" style="display: block; margin-top: 0.5rem; color: var(--link); font-weight: 500;"></small>
+                </div>
+                <button type="submit" id="save-note-btn" class="btn-primary block" style="margin-top: 1rem;">Save Note</button>
             </form>
         `);
 
-        document.getElementById('add-note-form').addEventListener('submit', (e) => {
+        document.getElementById('add-note-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = document.getElementById('save-note-btn');
+            const statusText = document.getElementById('upload-status');
+            const fileInput = document.getElementById('note-attachments');
+            
+            let attachments = [];
+            if (fileInput.files.length > 0) {
+                if (!accessToken) {
+                    alert("Please wait for Google Drive to connect, or sign in to upload files.");
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Uploading...';
+                statusText.textContent = 'Uploading files to Google Drive, please wait...';
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    try {
+                        const fileData = await uploadFileToDrive(fileInput.files[i]);
+                        attachments.push({
+                            id: fileData.id,
+                            name: fileData.name,
+                            url: fileData.webViewLink,
+                            mimeType: fileInput.files[i].type
+                        });
+                    } catch (err) {
+                        console.error("Upload error", err);
+                        alert("Failed to upload " + fileInput.files[i].name);
+                    }
+                }
+            }
+            
             appState.notes.push({
                 id: Date.now(),
                 title: document.getElementById('note-title').value.trim(),
                 content: document.getElementById('note-content').value.trim(),
-                date: getLocalDateKey()
+                date: getLocalDateKey(),
+                attachments: attachments
             });
             saveState();
             renderNotes();
@@ -1784,7 +1960,13 @@ function sanitizeAppState(data) {
                 id: Number(note.id) || Date.now(),
                 title: String(note.title).trim(),
                 content: String(note.content).trim(),
-                date: String(note.date || getLocalDateKey()).trim()
+                date: String(note.date || getLocalDateKey()).trim(),
+                attachments: Array.isArray(note.attachments) ? note.attachments.map(att => ({
+                    id: String(att.id || ''),
+                    name: String(att.name || ''),
+                    url: String(att.url || ''),
+                    mimeType: String(att.mimeType || '')
+                })) : []
             }));
     }
 
