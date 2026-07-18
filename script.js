@@ -1958,10 +1958,49 @@ window.editNote = (id) => {
         </form>
     `);
 
-    document.getElementById('edit-note-form').addEventListener('submit', (e) => {
+    document.getElementById('edit-note-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        note.title = document.getElementById('edit-note-title').value.trim();
+        const newTitle = document.getElementById('edit-note-title').value.trim();
+        const oldTitle = note.title;
+        note.title = newTitle;
         note.content = document.getElementById('edit-note-content').value.trim();
+        
+        if (newTitle !== oldTitle && note.attachments && note.attachments.length > 0) {
+            const btn = document.getElementById('edit-save-btn');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                btn.style.pointerEvents = 'none';
+            }
+
+            if (accessToken && navigator.onLine) {
+                for (let att of note.attachments) {
+                    let ext = "";
+                    const lastDot = att.name.lastIndexOf('.');
+                    if (lastDot > 0 && lastDot < att.name.length - 1) {
+                        ext = att.name.substring(lastDot);
+                    }
+                    const attNameNoExt = ext ? att.name.substring(0, lastDot) : att.name;
+                    
+                    if (attNameNoExt === oldTitle || note.attachments.length === 1) {
+                        const newAttName = newTitle + ext;
+                        try {
+                            await fetch(`https://www.googleapis.com/drive/v3/files/${att.id}`, {
+                                method: 'PATCH',
+                                headers: { 
+                                    'Authorization': `Bearer ${accessToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ name: newAttName })
+                            });
+                            att.name = newAttName;
+                        } catch(e) {
+                            console.error("Failed to rename attachment:", e);
+                        }
+                    }
+                }
+            }
+        }
+        
         saveState();
         renderNotes();
         closeModal();
