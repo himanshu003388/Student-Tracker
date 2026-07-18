@@ -850,12 +850,12 @@ window.navigateToSection = (target, skipHistory = false) => {
         }
     }, 10);
 
-    const navLinksContainer = document.querySelector('.nav-links');
+    const navActionsContainer = document.querySelector('.nav-actions');
     const mobileBtn = document.querySelector('.mobile-menu-btn');
-    if (window.innerWidth <= 768 && navLinksContainer.classList.contains('mobile-open')) {
-        navLinksContainer.classList.remove('mobile-open');
+    if (window.innerWidth <= 768 && navActionsContainer.classList.contains('mobile-open')) {
+        navActionsContainer.classList.remove('mobile-open');
         if (mobileBtn) {
-            mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            mobileBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
             mobileBtn.classList.remove('open');
         }
     }
@@ -3565,41 +3565,40 @@ function updateHabitGraph() {
 
 function initEventListeners() {
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-    const navLinks = document.querySelector('.nav-links');
+    const navActions = document.querySelector('.nav-actions');
 
-    if (mobileMenuBtn && navLinks) {
+    if (mobileMenuBtn && navActions) {
         mobileMenuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isOpen = navLinks.classList.contains('mobile-open');
+            const isOpen = navActions.classList.contains('mobile-open');
             if (isOpen) {
-                navLinks.classList.remove('mobile-open');
-                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                navActions.classList.remove('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
                 mobileMenuBtn.classList.remove('open');
             } else {
-                navLinks.classList.add('mobile-open');
+                navActions.classList.add('mobile-open');
                 mobileMenuBtn.innerHTML = '<i class="fas fa-times"></i>';
                 mobileMenuBtn.classList.add('open');
             }
         });
 
-        // Close nav when clicking outside
         document.addEventListener('click', (e) => {
             if (
-                navLinks.classList.contains('mobile-open') &&
-                !navLinks.contains(e.target) &&
+                navActions.classList.contains('mobile-open') &&
+                !navActions.contains(e.target) &&
                 !mobileMenuBtn.contains(e.target)
             ) {
-                navLinks.classList.remove('mobile-open');
-                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                navActions.classList.remove('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
                 mobileMenuBtn.classList.remove('open');
             }
         });
 
         // Close nav on window resize to desktop
         window.addEventListener('resize', () => {
-            if (window.innerWidth > 768 && navLinks.classList.contains('mobile-open')) {
-                navLinks.classList.remove('mobile-open');
-                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            if (window.innerWidth > 768 && navActions.classList.contains('mobile-open')) {
+                navActions.classList.remove('mobile-open');
+                mobileMenuBtn.innerHTML = '<i class="fas fa-ellipsis-v"></i>';
                 mobileMenuBtn.classList.remove('open');
             }
         });
