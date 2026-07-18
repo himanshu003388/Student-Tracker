@@ -84,6 +84,15 @@
                         </div>
                     </div>
 
+                    <!-- Exam Countdown Card -->
+                    <div class="exam-countdown-container card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-calendar-check"></i> Upcoming Exams</h2>
+                            <button id="add-exam-btn" class="btn-primary small"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div id="exam-list" class="exam-list"></div>
+                    </div>
+
                     <!-- Daily Tasks Card -->
                     <div class="dashboard-tasks-container card">
                         <div class="section-header">
@@ -91,6 +100,7 @@
                         </div>
                         <div class="task-input-container">
                             <input type="text" id="task-input" placeholder="What needs to be done?">
+                            <input type="date" id="task-due-date" class="task-date-input" title="Due Date (Optional)">
                             <button id="add-task-btn" class="btn-primary"><i class="fas fa-plus"></i></button>
                         </div>
                         <div class="task-filters">

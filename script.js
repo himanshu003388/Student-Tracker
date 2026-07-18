@@ -7,6 +7,7 @@ const DEFAULT_STATE = {
         { id: 4, name: 'LeetCode', url: 'https://leetcode.com', icon: 'fas fa-code' }
     ],
     tasks: [],
+    exams: [],
     habits: [],
     weeklyTargets: [],
     monthlyTargets: [],
@@ -261,7 +262,11 @@ const elements = {
     linksGrid: document.getElementById('links-grid'),
     taskList: document.getElementById('task-list'),
     taskInput: document.getElementById('task-input'),
+    taskDueDate: document.getElementById('task-due-date'),
     addTaskBtn: document.getElementById('add-task-btn'),
+    examList: document.getElementById('exam-list'),
+    addExamBtn: document.getElementById('add-exam-btn'),
+    examCountdownContainer: document.getElementById('exam-countdown-container'),
     habitsTableHead: document.getElementById('habits-table-head'),
     habitsTableBody: document.getElementById('habits-table-body'),
     habitMonthName: document.getElementById('habit-month-name'),
@@ -369,6 +374,7 @@ function renderAll() {
     updateHabitStreak();
     renderLinks();
     renderTasks();
+    renderExams();
     renderHabits();
     renderNotes();
     updateStats();
@@ -906,14 +912,42 @@ function renderTasks() {
     // Only allow drag reorder when showing the full unfiltered list
     const isFiltered = filter !== 'all';
 
-    elements.taskList.innerHTML = filteredTasks.map(task => `
+    elements.taskList.innerHTML = filteredTasks.map(task => {
+        let badgeHtml = '';
+        if (task.dueDate && !task.completed) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const due = new Date(task.dueDate);
+            // Fix timezone offset issues
+            due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
+            due.setHours(0,0,0,0);
+            
+            const diffTime = due - today;
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            
+            let badgeClass = 'due-later';
+            let badgeText = `Due: ${due.toLocaleDateString()}`;
+            
+            if (diffDays < 0) {
+                badgeClass = 'due-overdue';
+                badgeText = 'Overdue';
+            } else if (diffDays <= 1) {
+                badgeClass = 'due-soon';
+                badgeText = diffDays === 0 ? 'Due Today' : 'Due Tomorrow';
+            }
+            
+            badgeHtml = `<span class="due-date-badge ${badgeClass}">${badgeText}</span>`;
+        }
+
+        return `
         <li class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}" ${!isFiltered ? 'draggable="true"' : ''}>
             ${!isFiltered ? `<div class="task-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>` : ''}
             <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
-            <span>${escapeHtml(task.text)}</span>
+            <span>${escapeHtml(task.text)}${badgeHtml}</span>
             <button class="delete-task" onclick="deleteTask(${task.id})"><i class="fas fa-trash"></i></button>
         </li>
-    `).join('');
+        `;
+    }).join('');
 
     if (!isFiltered) initTasksDragAndDrop();
 }
@@ -921,14 +955,100 @@ function renderTasks() {
 if (elements.addTaskBtn) {
     elements.addTaskBtn.addEventListener('click', () => {
         const text = elements.taskInput.value.trim();
+        const dueDate = elements.taskDueDate ? elements.taskDueDate.value : null;
         if (text) {
-            appState.tasks.push({ id: Date.now(), text, completed: false, date: getLocalDateKey() });
+            appState.tasks.push({ id: Date.now(), text, completed: false, date: getLocalDateKey(), dueDate });
             elements.taskInput.value = '';
+            if (elements.taskDueDate) elements.taskDueDate.value = '';
             saveState();
             renderTasks();
         }
     });
 }
+
+// --- EXAM COUNTDOWNS ---
+function renderExams() {
+    if (!elements.examList || !elements.examCountdownContainer) return;
+    
+    // Sort exams by date
+    const sortedExams = [...(appState.exams || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    if (sortedExams.length === 0) {
+        elements.examCountdownContainer.style.display = 'none';
+        return;
+    }
+    
+    elements.examCountdownContainer.style.display = 'block';
+    
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    elements.examList.innerHTML = sortedExams.map(exam => {
+        const examDate = new Date(exam.date);
+        examDate.setMinutes(examDate.getMinutes() + examDate.getTimezoneOffset());
+        examDate.setHours(0,0,0,0);
+        
+        const diffTime = examDate - today;
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        let daysClass = '';
+        let daysText = `${diffDays} Days`;
+        
+        if (diffDays < 0) {
+            daysClass = 'passed';
+            daysText = 'Passed';
+        } else if (diffDays === 0) {
+            daysClass = 'urgent';
+            daysText = 'Today!';
+        } else if (diffDays <= 3) {
+            daysClass = 'urgent';
+        }
+        
+        return `
+            <div class="exam-item">
+                <div class="exam-info">
+                    <h4>${escapeHtml(exam.name)}</h4>
+                    <p>${examDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div class="exam-countdown-days ${daysClass}">${daysText}</div>
+                    <button class="exam-delete-btn" onclick="deleteExam(${exam.id})" title="Remove Exam"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+if (elements.addExamBtn) {
+    elements.addExamBtn.addEventListener('click', () => {
+        const name = prompt('Enter the name of the Exam or Deadline:');
+        if (!name) return;
+        const dateStr = prompt('Enter the date (YYYY-MM-DD):');
+        if (!dateStr || isNaN(new Date(dateStr).getTime())) {
+            alert('Invalid date format. Please use YYYY-MM-DD');
+            return;
+        }
+        
+        if (!appState.exams) appState.exams = [];
+        appState.exams.push({
+            id: Date.now(),
+            name: name.trim(),
+            date: dateStr
+        });
+        
+        saveState();
+        renderExams();
+    });
+}
+
+window.deleteExam = (id) => {
+    if (confirm('Remove this exam countdown?')) {
+        appState.exams = appState.exams.filter(e => e.id !== id);
+        saveState();
+        renderExams();
+    }
+};
+// -----------------------
 
 window.toggleTask = (id) => {
     const task = appState.tasks.find(t => t.id === id);
