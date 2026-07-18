@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Tracker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="theme-color" content="#f5f5f5" id="theme-color-meta">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+    <script>
+        (function () {
+            var e;
+            try { e = JSON.parse(localStorage.getItem('cs_dashboard_data')) } catch (t) { }
+            var n = e && e.theme || 'light';
+            window.initialTheme = n;
+            document.body.className = n === 'dark' ? 'dark-mode' : 'light-mode';
+            var o = document.getElementById('theme-color-meta');
+            if (o) o.content = n === 'dark' ? '#050505' : '#f5f5f5';
+        })();
+    </script>
+    <header>
+        <nav class="top-nav">
+            <a href="#dashboard" class="logo" data-section="dashboard">
+                <i class="fas fa-rocket"></i> <span>Student Tracker</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#dashboard" class="active" data-section="dashboard"><i class="fas fa-home"></i>
+                        <span>Dashboard</span></a></li>
+                <li><a href="#habits" data-section="habits"><i class="fas fa-calendar-check"></i>
+                        <span>Habits</span></a></li>
+                <li><a href="#money" data-section="money"><i class="fas fa-wallet"></i> <span>Money Tracker</span></a>
+                </li>
+            </ul>
+            <div class="nav-actions">
+                <button id="auth-btn" class="auth-btn btn-secondary small">
+                    <i class="fab fa-google"></i> <span id="auth-btn-text">Sign In</span>
+                </button>
+                <div class="theme-toggle" id="theme-toggle" role="button" tabindex="0" title="Toggle Dark/Light Mode">
+                    <script>if (window.initialTheme === 'dark') document.getElementById('theme-toggle').classList.add('dark');</script>
+                    <div class="theme-toggle-track">
+                        <div class="theme-toggle-thumb">
+                            <i class="fas fa-sun"></i>
+                            <i class="fas fa-moon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+    </header>
+
+    <main id="content-area">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="active-section">
+            <div class="dashboard-grid-layout">
+                <!-- Column 1: Welcome & Daily Tasks -->
+                <div class="dashboard-column">
+                    <!-- Welcome Card (Clock) -->
+                    <div class="welcome-card card">
+                        <div class="welcome-content">
+                            <div class="date-time">
+                                <h1 id="current-time">00:00:00</h1>
+                                <p id="current-date">Monday, 1 January 2024</p>
+                            </div>
+                            <div class="quote-box">
+                                <i class="fas fa-quote-left"></i>
+                                <p id="motivational-quote">Believe you can and you're halfway there.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Tasks Card -->
+                    <div class="dashboard-tasks-container card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-tasks"></i> Daily Tasks</h2>
+                        </div>
+                        <div class="task-input-container">
+                            <input type="text" id="task-input" placeholder="What needs to be done?">
+                            <button id="add-task-btn" class="btn-primary"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="task-filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="pending">Pending</button>
+                            <button class="filter-btn" data-filter="completed">Completed</button>
+                        </div>
+                        <ul id="task-list" class="task-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Column 2: Quick Links & Stats -->
+                <div class="dashboard-column">
+                    <!-- Quick Links Card -->
+                    <div class="quick-links-container card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-bolt"></i> Quick Links</h2>
+                            <button id="add-link-btn" class="btn-primary small"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="links-grid" id="links-grid"></div>
+                    </div>
+
+                    <!-- Pomodoro Timer Card -->
+                    <div class="pomodoro-container card">
+                        <div class="section-header">
+                            <h2><i class="fas fa-stopwatch"></i> Focus Timer</h2>
+                            <div class="header-actions">
+                                <div class="pomodoro-card-clock" id="pomodoro-card-clock">
+                                    <span class="pomodoro-card-time" id="pomodoro-card-time"></span>
+                                    <span class="pomodoro-card-date" id="pomodoro-card-date"></span>
+                                </div>
+                                <button id="pomodoro-mute-btn" class="btn-icon" title="Mute Timer Sound"><i
+                                        class="fas fa-volume-up"></i></button>
+                                <button id="pomodoro-settings-btn" class="btn-icon" title="Timer Settings"><i
+                                        class="fas fa-cog"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="pomodoro-wrapper">
+                            <!-- Mode selection tabs -->
+                            <div class="pomodoro-modes">
+                                <button class="pomodoro-mode-btn active" data-mode="work">Pomodoro</button>
+                                <button class="pomodoro-mode-btn" data-mode="short">Short Break</button>
+                                <button class="pomodoro-mode-btn" data-mode="long">Long Break</button>
+                            </div>
+
+                            <!-- Circular Timer Display -->
+                            <div class="pomodoro-display-container">
+                                <svg class="pomodoro-circle-svg" viewBox="0 0 200 200">
+                                    <circle class="pomodoro-circle-bg" cx="100" cy="100" r="90"></circle>
+                                    <circle class="pomodoro-circle-progress" cx="100" cy="100" r="90"
+                                        transform="rotate(-90 100 100)"></circle>
+                                </svg>
+                                <div class="pomodoro-time-wrapper">
+                                    <div id="pomodoro-time">25:00</div>
+                                    <div id="pomodoro-label" class="pomodoro-label">WORK TIME</div>
+                                </div>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="pomodoro-controls">
+                                <button id="pomodoro-play-btn" class="btn-primary" title="Start"><i
+                                        class="fas fa-play"></i> Start</button>
+                                <button id="pomodoro-reset-btn" class="btn-secondary" title="Reset"><i
+                                        class="fas fa-undo"></i> Reset</button>
+                            </div>
+
+                            <!-- Stats info -->
+                            <div class="pomodoro-stats-info">
+                                <div class="pomo-stat-item">
+                                    <span class="pomo-stat-value" id="pomodoro-completed-sessions">0</span>
+                                    <span class="pomo-stat-label">Sessions Done</span>
+                                </div>
+                                <div class="pomo-stat-item">
+                                    <span class="pomo-stat-value" id="pomodoro-total-focus-time">0h</span>
+                                    <span class="pomo-stat-label">Focus Logged</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Panel (Hidden by default) -->
+                        <div class="pomodoro-settings-panel hidden">
+                            <div class="form-group">
+                                <label for="pomo-work-duration">Work duration (minutes)</label>
+                                <input type="number" id="pomo-work-duration" min="1" max="180" value="25">
+                            </div>
+                            <div class="form-group">
+                                <label for="pomo-short-duration">Short Break duration (minutes)</label>
+                                <input type="number" id="pomo-short-duration" min="1" max="60" value="5">
+                            </div>
+                            <div class="form-group">
+                                <label for="pomo-long-duration">Long Break (minutes)</label>
+                                <input type="number" id="pomo-long-duration" min="1" max="60" value="15">
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                                <button id="pomodoro-save-settings" class="btn-primary block small">Save
+                                    settings</button>
+                                <button id="pomodoro-close-settings" class="btn-secondary block small">Back</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Notes & Snippets spanning full width -->
+                <div class="notes-container card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-sticky-note"></i> Notes & Snippets</h2>
+                        <input type="text" id="note-search" placeholder="Search notes..." class="search-input">
+                        <button id="add-note-btn" class="btn-primary small"><i class="fas fa-plus"></i> New
+                            Note</button>
+                    </div>
+                    <div class="notes-grid" id="notes-grid"></div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- Habits Section -->
+        <section id="habits" class="hidden">
+            <div class="section-header">
+                <h2><i class="fas fa-calendar-check"></i> Monthly Habit Tracker</h2>
+                <div class="header-actions">
+                    <button id="reset-habits-btn" class="btn-text" title="Reset Habits for New Month"
+                        onclick="resetHabits()"><i class="fas fa-sync-alt"></i></button>
+                    <button id="add-habit-btn" class="btn-primary small"><i class="fas fa-plus"></i> Add Habit</button>
+                    <div class="streak-badge">
+                        <i class="fas fa-fire"></i> <span id="habit-streak-display">0</span> Day Streak
+                    </div>
+                </div>
+            </div>
+
+            <div class="habits-container card">
+                <div class="habit-month-header" id="habit-month-name"></div>
+
+                <div class="habits-table-wrapper">
+                    <table class="habits-table">
+                        <thead>
+                            <tr id="habits-table-head"></tr>
+                        </thead>
+                        <tbody id="habits-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Habit Progress Card -->
+            <div class="chart-card card habits-graph-card mt-20">
+                <h3 class="habits-graph-title" style="margin-bottom: 1.25rem;"><i class="fas fa-chart-line"></i> Habit
+                    Progress</h3>
+                <div class="chart-container habits-chart-container">
+                    <canvas id="habits-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Targets & Circle Analytics Section -->
+            <div class="targets-analytics-wrap">
+                <div class="targets-container">
+                    <!-- Weekly Targets Card -->
+                    <div class="targets-card card">
+                        <div class="section-header" style="margin-bottom: 1.25rem;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-week"
+                                    style="color: var(--weekly-color); margin-right: 0.5rem;"></i>Weekly Targets</h3>
+                            <button id="add-weekly-target-btn" class="btn-primary small" title="Add Weekly Target"><i
+                                    class="fas fa-plus"></i></button>
+                        </div>
+                        <ul id="weekly-targets-list" class="task-list targets-checklist" style="margin: 0; padding: 0;">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+
+                    <!-- Monthly Targets Card -->
+                    <div class="targets-card card">
+                        <div class="section-header" style="margin-bottom: 1.25rem;">
+                            <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fas fa-calendar-alt"
+                                    style="color: var(--monthly-color); margin-right: 0.5rem;"></i>Monthly Targets</h3>
+                            <button id="add-monthly-target-btn" class="btn-primary small" title="Add Monthly Target"><i
+                                    class="fas fa-plus"></i></button>
+                        </div>
+                        <ul id="monthly-targets-list" class="task-list targets-checklist"
+                            style="margin: 0; padding: 0;">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Circular Analytics Card -->
+                <div class="analytics-card card">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.25rem;"><i class="fas fa-chart-pie"
+                            style="margin-right: 0.5rem;"></i>Target Progress</h3>
+                    <div class="circular-progress-container">
+                        <div class="svg-ring-wrap">
+                            <svg width="180" height="180" viewBox="0 0 180 180" class="concentric-rings">
+                                <!-- Background rings -->
+                                <circle class="ring-bg outer-ring-bg" cx="90" cy="90" r="70" stroke-width="10"
+                                    fill="transparent" />
+                                <circle class="ring-bg inner-ring-bg" cx="90" cy="90" r="48" stroke-width="10"
+                                    fill="transparent" />
+
+                                <!-- Progress rings -->
+                                <circle class="ring-progress outer-ring" id="weekly-progress-ring" cx="90" cy="90"
+                                    r="70" stroke-width="10" fill="transparent" stroke-dasharray="439.82"
+                                    stroke-dashoffset="439.82" stroke-linecap="round" />
+                                <circle class="ring-progress inner-ring" id="monthly-progress-ring" cx="90" cy="90"
+                                    r="48" stroke-width="10" fill="transparent" stroke-dasharray="301.59"
+                                    stroke-dashoffset="301.59" stroke-linecap="round" />
+                            </svg>
+                            <div class="ring-center-text">
+                                <div class="ring-percent-item weekly-txt">
+                                    <span class="dot weekly-dot"></span>W: <strong id="weekly-ring-percent">0%</strong>
+                                </div>
+                                <div class="ring-percent-item monthly-txt">
+                                    <span class="dot monthly-dot"></span>M: <strong
+                                        id="monthly-ring-percent">0%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress-legend">
+                            <div class="legend-item">
+                                <span class="legend-color weekly-color-bg"></span>
+                                <span>Weekly Targets</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color monthly-color-bg"></span>
+                                <span>Monthly Targets</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+
+
+        <!-- Money Tracker Section -->
+        <section id="money" class="hidden">
+            <div class="section-header">
+                <h2>💰 Money Tracker</h2>
+                <div class="header-actions">
+                    <button id="money-export-btn" class="btn-text" title="Export Transactions"><i
+                            class="fas fa-file-export"></i></button>
+                    <button id="money-import-btn" class="btn-text" title="Import Transactions"><i
+                            class="fas fa-file-import"></i></button>
+                </div>
+            </div>
+
+            <div class="money-summary-grid">
+                <div class="money-stat-card card income">
+                    <i class="fas fa-arrow-up"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Income</span>
+                        <span class="stat-value" id="money-total-income">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card expense">
+                    <i class="fas fa-arrow-down"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Expense</span>
+                        <span class="stat-value" id="money-total-expense">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card balance">
+                    <i class="fas fa-wallet"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">Current Balance</span>
+                        <span class="stat-value" id="money-current-balance">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card month-expense">
+                    <i class="fas fa-calendar-minus"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">This Month Exp</span>
+                        <span class="stat-value" id="money-month-expense">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card month-income">
+                    <i class="fas fa-calendar-plus"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">This Month Inc</span>
+                        <span class="stat-value" id="money-month-income">₹0</span>
+                    </div>
+                </div>
+                <div class="money-stat-card card month-balance">
+                    <i class="fas fa-piggy-bank"></i>
+                    <div class="stat-info">
+                        <span class="stat-label">This Month Bal</span>
+                        <span class="stat-value" id="money-month-balance">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-add-section card mt-20">
+                <h3><i class="fas fa-bolt"></i> Quick Add Expenses</h3>
+                <div class="quick-add-btns">
+                    <button class="quick-add-btn" onclick="quickAddExpense('Mess', 120)">Mess ₹120</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Snacks', 50)">Snacks ₹50</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Diet', 40)">Milk ₹40</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Diet', 60)">Eggs ₹60</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Protein supplements', 250)">Protein
+                        ₹250</button>
+                    <button class="quick-add-btn" onclick="quickAddExpense('Travel', 100)">Travel ₹100</button>
+                </div>
+            </div>
+
+            <div class="money-main-layout mt-20">
+                <div class="money-forms-column">
+                    <div class="add-transaction-card card">
+                        <h3><i class="fas fa-plus-circle"></i> Add Transaction</h3>
+                        <form id="transaction-form">
+                            <div class="form-group">
+                                <label for="trans-date">Date</label>
+                                <input type="date" id="trans-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-type">Type</label>
+                                <select id="trans-type" required>
+                                    <option value="Expense">Expense</option>
+                                    <option value="Income">Income</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-amount">Amount (₹)</label>
+                                <input type="number" id="trans-amount" min="1" required placeholder="Enter amount">
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-category">Category</label>
+                                <select id="trans-category" required>
+                                    <option value="Mess">Mess</option>
+                                    <option value="Diet">Diet (milk, fruits, eggs)</option>
+                                    <option value="Protein supplements">Protein supplements</option>
+                                    <option value="Gym">Gym</option>
+                                    <option value="Snacks">Snacks</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Hostel Fees">Hostel Fees</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Stationery">Stationery</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-mode">Payment Mode</label>
+                                <select id="trans-mode" required>
+                                    <option value="UPI">UPI</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Bank">Bank</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="trans-notes">Notes (Optional)</label>
+                                <textarea id="trans-notes" rows="2" placeholder="Short note..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary block">Add Transaction</button>
+                        </form>
+                    </div>
+
+                    <div class="monthly-report-card card mt-20">
+                        <div class="section-header">
+                            <h3><i class="fas fa-file-invoice-dollar"></i> Monthly Report</h3>
+                            <select id="report-month-selector" class="small-select"></select>
+                        </div>
+                        <div class="report-stats">
+                            <div class="report-item"><span>Total Income:</span> <strong id="report-income">₹0</strong>
+                            </div>
+                            <div class="report-item"><span>Total Expense:</span> <strong id="report-expense"
+                                    class="text-danger">₹0</strong></div>
+                            <div class="report-item"><span>Net Savings:</span> <strong id="report-savings"
+                                    class="text-success">₹0</strong></div>
+                            <div class="report-item"><span>Top Category:</span> <strong
+                                    id="report-top-category">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="money-history-column">
+                    <div class="history-card card">
+                        <div class="section-header">
+                            <h3><i class="fas fa-history"></i> Transaction History</h3>
+                            <div class="history-filters">
+                                <input type="text" id="money-search" placeholder="Search notes..." class="search-input">
+                                <select id="filter-month" class="filter-select">
+                                    <option value="all">All Months</option>
+                                </select>
+                                <select id="filter-category" class="filter-select">
+                                    <option value="all">All Categories</option>
+                                    <option value="Mess">Mess</option>
+                                    <option value="Diet">Diet</option>
+                                    <option value="Protein supplements">Protein</option>
+                                    <option value="Gym">Gym</option>
+                                    <option value="Snacks">Snacks</option>
+                                    <option value="Travel">Travel</option>
+                                    <option value="Hostel Fees">Hostel Fees</option>
+                                    <option value="Medical">Medical</option>
+                                    <option value="Stationery">Stationery</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                                <select id="filter-type" class="filter-select">
+                                    <option value="all">All Types</option>
+                                    <option value="Income">Income</option>
+                                    <option value="Expense">Expense</option>
+                                </select>
+                                <button id="sort-date-btn" class="btn-icon" title="Sort by Date"><i
+                                        class="fas fa-sort-amount-down"></i></button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Category</th>
+                                        <th>Mode</th>
+                                        <th>Notes</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transaction-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="money-charts-grid mt-20">
+                        <div class="chart-card card">
+                            <h3>Category-wise Expense</h3>
+                            <div class="chart-container">
+                                <canvas id="expense-pie-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card card">
+                            <h3>Monthly Spending (Last 6 Months)</h3>
+                            <div class="chart-container">
+                                <canvas id="spending-bar-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add New</h3>
+                <button class="close-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Made with ❤️ by HIMANSHU</p>
+            <div class="footer-actions">
+                <button id="export-btn" class="btn-text small"><i class="fas fa-download"></i> Export Data</button>
+                <button id="import-btn" class="btn-text small"><i class="fas fa-upload"></i> Import Data</button>
+                <input type="file" id="import-file" style="display: none;">
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js?v=1.0.1"></script>
+</body>
+
+</html>
