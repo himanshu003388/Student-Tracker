@@ -1722,6 +1722,16 @@ function sanitizeAppState(data) {
             }));
     }
 
+    if (Array.isArray(data.exams)) {
+        cleanState.exams = data.exams
+            .filter(exam => exam && typeof exam === 'object' && exam.name && exam.date)
+            .map(exam => ({
+                id: Number(exam.id) || Date.now(),
+                name: String(exam.name).trim(),
+                date: String(exam.date).trim()
+            }));
+    }
+
     if (Array.isArray(data.habits)) {
         cleanState.habits = data.habits
             .filter(habit => habit && typeof habit === 'object' && habit.name)
