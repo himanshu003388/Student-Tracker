@@ -2564,11 +2564,23 @@ function renderDocumentBreadcrumbs() {
     bcContainer.innerHTML = html;
 }
 
-window.navigateToFolder = (folderId) => {
+window.navigateToFolder = (folderId, skipHistory = false) => {
     currentFolderId = folderId;
     renderDocumentBreadcrumbs();
     renderDocuments();
+    
+    if (!skipHistory) {
+        history.pushState({ folderId: folderId }, "", "");
+    }
 };
+
+window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.folderId) {
+        window.navigateToFolder(e.state.folderId, true);
+    } else if (currentFolderId !== 'root') {
+        window.navigateToFolder('root', true);
+    }
+});
 
 window.createNewFolder = async () => {
     if (!accessToken) {
