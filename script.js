@@ -76,7 +76,7 @@ function initGoogleAuth() {
             updateAuthUI(true);
             syncFromDrive();
         }
-    } catch(e) {}
+    } catch (e) { }
 
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
@@ -111,7 +111,7 @@ function handleAuthClick() {
         }
     } else {
         // Sign in
-        tokenClient.requestAccessToken({prompt: 'consent'});
+        tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 }
 
@@ -133,7 +133,7 @@ async function syncFromDrive() {
         let fileId = await getDriveFileId();
         if (fileId) {
             const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&t=${Date.now()}`, {
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Cache-Control': 'no-cache'
                 }
@@ -143,7 +143,7 @@ async function syncFromDrive() {
                 isSyncing = true;
                 const newStateStr = JSON.stringify(sanitizeAppState(data));
                 const oldStateStr = localStorage.getItem('cs_dashboard_data');
-                
+
                 // Only reload if the cloud data is actually different from local data
                 if (newStateStr !== oldStateStr) {
                     appState = sanitizeAppState(data);
@@ -169,7 +169,7 @@ async function syncToDrive(stateToSync) {
             // If file exists, just update the content using uploadType=media (simplest and most reliable)
             await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
                 method: 'PATCH',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
                 },
@@ -196,7 +196,7 @@ async function syncToDrive(stateToSync) {
 
             await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': `multipart/related; boundary=${boundary}`
                 },
@@ -939,43 +939,43 @@ if (elements.addTaskBtn) {
 // --- EXAM COUNTDOWNS ---
 function renderExams() {
     if (!elements.examList || !elements.examCountdownContainer) return;
-    
+
     // Sort exams by date
     const sortedExams = [...(appState.exams || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
-    
+
     elements.examCountdownContainer.style.display = 'block';
-    
+
     if (sortedExams.length === 0) {
         elements.examList.innerHTML = `<p style="text-align: center; color: var(--mute); font-size: 0.9rem; padding: 1rem 0;">No upcoming exams or deadlines.</p>`;
         return;
     }
-    
+
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
 
     elements.examList.innerHTML = sortedExams.map(exam => {
         const examDate = new Date(exam.date);
         examDate.setMinutes(examDate.getMinutes() + examDate.getTimezoneOffset());
-        examDate.setHours(0,0,0,0);
-        
+        examDate.setHours(0, 0, 0, 0);
+
         const diffTime = examDate - today;
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        
+
         const creationDate = new Date(exam.id);
-        creationDate.setHours(0,0,0,0);
-        
+        creationDate.setHours(0, 0, 0, 0);
+
         const totalDurationDays = Math.round((examDate - creationDate) / (1000 * 60 * 60 * 24));
-        
+
         let progress = 100;
         if (diffDays <= 0) {
             progress = 0;
         } else if (totalDurationDays > 0) {
             progress = Math.max(0, Math.min(100, (diffDays / totalDurationDays) * 100));
         }
-        
+
         let barColor = 'var(--link)'; // Blue
         let daysText = `${diffDays} Days Left`;
-        
+
         if (diffDays < 0) {
             barColor = 'var(--error)';
             daysText = 'Passed';
@@ -987,7 +987,7 @@ function renderExams() {
         } else if (diffDays <= 7) {
             barColor = 'var(--warning)'; // Yellow
         }
-        
+
         return `
             <div class="exam-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -1010,47 +1010,30 @@ function renderExams() {
 
 if (elements.addExamBtn) {
     elements.addExamBtn.addEventListener('click', () => {
-        if (!elements.modalOverlay || !elements.modalBody || !elements.modalTitle) return;
+        const nameInput = document.getElementById('exam-name-input');
+        const dateInput = document.getElementById('exam-date-input');
         
-        elements.modalTitle.textContent = 'Add Upcoming Exam or Deadline';
-        elements.modalBody.innerHTML = `
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" id="exam-name-input" placeholder="e.g. Final Math Exam">
-            </div>
-            <div class="form-group">
-                <label>Date</label>
-                <input type="date" id="exam-date-input">
-            </div>
-            <button id="save-exam-btn" class="btn-primary block">Save Deadline</button>
-        `;
+        if (!nameInput || !dateInput) return;
         
-        elements.modalOverlay.classList.remove('hidden');
-        
-        // Focus the name input for convenience
-        setTimeout(() => document.getElementById('exam-name-input').focus(), 100);
-        
-        const saveBtn = document.getElementById('save-exam-btn');
-        saveBtn.onclick = () => {
-            const name = document.getElementById('exam-name-input').value.trim();
-            const dateStr = document.getElementById('exam-date-input').value;
-            
-            if (!name || !dateStr) {
-                alert('Please provide both a name and a date.');
-                return;
-            }
-            
-            if (!appState.exams) appState.exams = [];
-            appState.exams.push({
-                id: Date.now(),
-                name: name,
-                date: dateStr
-            });
-            
-            saveState();
-            renderExams();
-            elements.modalOverlay.classList.add('hidden');
-        };
+        const name = nameInput.value.trim();
+        const dateStr = dateInput.value;
+
+        if (!name || !dateStr) {
+            alert('Please provide both a name and a date.');
+            return;
+        }
+
+        if (!appState.exams) appState.exams = [];
+        appState.exams.push({
+            id: Date.now(),
+            name: name,
+            date: dateStr
+        });
+
+        nameInput.value = '';
+        dateInput.value = '';
+        saveState();
+        renderExams();
     });
 }
 
