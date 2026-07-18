@@ -2319,13 +2319,13 @@ td {
     order: 3 !important;
     justify-content: space-evenly !important;
     position: static !important;
-    width: 100% !important;
-    background: transparent !important;
-    padding: 0.5rem 0 !important;
-    margin-top: 0.5rem !important;
-    border-top: 1px solid var(--hairline) !important;
-    border-bottom: none !important;
-    box-shadow: none !important;
+    width: auto !important;
+    background: var(--canvas) !important;
+    padding: 0.25rem 0.5rem !important;
+    margin: 0.5rem 0.25rem 0.5rem 0.25rem !important;
+    border-radius: 2rem !important;
+    border: 1px solid var(--hairline) !important;
+    box-shadow: var(--shadow-sm) !important;
     max-height: none !important;
     opacity: 1 !important;
     pointer-events: auto !important;
@@ -3274,13 +3274,7 @@ td {
   }
 
   .top-nav {
-    height: 56px;
     padding: 0 0.6rem;
-  }
-
-  .logo span {
-    display: none;
-    /* show just the icon on very small screens */
   }
 
 
