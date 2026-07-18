@@ -961,43 +961,42 @@ function renderExams() {
         const diffTime = examDate - today;
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
-        const circumference = 2 * Math.PI * 20; // ~125.66
         let progress = 0;
         if (diffDays <= 0) {
             progress = 100;
         } else if (diffDays <= 30) {
             progress = ((30 - diffDays) / 30) * 100;
         }
-        const offset = circumference - (progress / 100) * circumference;
         
-        let strokeColor = 'var(--link)';
-        let daysText = `${diffDays}d`;
+        let barColor = 'var(--link)'; // Blue
+        let daysText = `${diffDays} Days Left`;
         
         if (diffDays < 0) {
-            strokeColor = 'var(--error)';
-            daysText = 'Past';
+            barColor = 'var(--error)';
+            daysText = 'Passed';
         } else if (diffDays === 0) {
-            strokeColor = 'var(--error)';
-            daysText = 'Today';
+            barColor = 'var(--error)'; // Red
+            daysText = 'Today!';
         } else if (diffDays <= 3) {
-            strokeColor = 'var(--orange-color)';
+            barColor = 'var(--error)'; // Red
+        } else if (diffDays <= 7) {
+            barColor = 'var(--warning)'; // Yellow
         }
         
         return `
-            <div class="exam-item">
-                <div class="exam-info">
-                    <h4>${escapeHtml(exam.name)}</h4>
-                    <p>${examDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="position: relative; width: 48px; height: 48px; margin-right: 0.5rem; display: flex; align-items: center; justify-content: center;">
-                        <svg width="48" height="48" viewBox="0 0 48 48" style="position: absolute; top:0; left:0; transform: rotate(-90deg);">
-                            <circle cx="24" cy="24" r="20" fill="transparent" stroke="var(--hairline)" stroke-width="4"></circle>
-                            <circle cx="24" cy="24" r="20" fill="transparent" stroke="${strokeColor}" stroke-width="4" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out;"></circle>
-                        </svg>
-                        <div style="position: relative; z-index: 1; font-family: var(--font-display); font-weight: 700; font-size: 0.75rem; color: ${strokeColor};">${daysText}</div>
+            <div class="exam-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div class="exam-info">
+                        <h4>${escapeHtml(exam.name)}</h4>
+                        <p>${examDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                     </div>
-                    <button class="exam-delete-btn" onclick="deleteExam(${exam.id})" title="Remove Exam"><i class="fas fa-times"></i></button>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: ${barColor};">${daysText}</span>
+                        <button class="exam-delete-btn" onclick="deleteExam(${exam.id})" title="Remove Exam" style="margin-left: 0; padding: 0.2rem;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                <div class="progress-container" style="height: 6px; margin-top: 0; background: var(--canvas-soft-2);">
+                    <div class="progress-bar" style="width: ${progress}%; background: ${barColor};"></div>
                 </div>
             </div>
         `;
