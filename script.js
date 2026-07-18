@@ -124,7 +124,7 @@ function handleAuthClick() {
         }
     } else {
         // Sign in or Reconnect
-        tokenClient.requestAccessToken({ prompt: 'consent' });
+        tokenClient.requestAccessToken({ prompt: '' });
     }
 }
 
