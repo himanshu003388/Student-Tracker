@@ -961,17 +961,26 @@ function renderExams() {
         const diffTime = examDate - today;
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
-        let daysClass = '';
-        let daysText = `${diffDays} Days`;
+        const circumference = 2 * Math.PI * 20; // ~125.66
+        let progress = 0;
+        if (diffDays <= 0) {
+            progress = 100;
+        } else if (diffDays <= 30) {
+            progress = ((30 - diffDays) / 30) * 100;
+        }
+        const offset = circumference - (progress / 100) * circumference;
+        
+        let strokeColor = 'var(--link)';
+        let daysText = `${diffDays}d`;
         
         if (diffDays < 0) {
-            daysClass = 'passed';
-            daysText = 'Passed';
+            strokeColor = 'var(--error)';
+            daysText = 'Past';
         } else if (diffDays === 0) {
-            daysClass = 'urgent';
-            daysText = 'Today!';
+            strokeColor = 'var(--error)';
+            daysText = 'Today';
         } else if (diffDays <= 3) {
-            daysClass = 'urgent';
+            strokeColor = 'var(--orange-color)';
         }
         
         return `
@@ -981,7 +990,13 @@ function renderExams() {
                     <p>${examDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
                 </div>
                 <div style="display: flex; align-items: center;">
-                    <div class="exam-countdown-days ${daysClass}">${daysText}</div>
+                    <div style="position: relative; width: 48px; height: 48px; margin-right: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                        <svg width="48" height="48" viewBox="0 0 48 48" style="position: absolute; top:0; left:0; transform: rotate(-90deg);">
+                            <circle cx="24" cy="24" r="20" fill="transparent" stroke="var(--hairline)" stroke-width="4"></circle>
+                            <circle cx="24" cy="24" r="20" fill="transparent" stroke="${strokeColor}" stroke-width="4" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" style="transition: stroke-dashoffset 1s ease-in-out;"></circle>
+                        </svg>
+                        <div style="position: relative; z-index: 1; font-family: var(--font-display); font-weight: 700; font-size: 0.75rem; color: ${strokeColor};">${daysText}</div>
+                    </div>
                     <button class="exam-delete-btn" onclick="deleteExam(${exam.id})" title="Remove Exam"><i class="fas fa-times"></i></button>
                 </div>
             </div>
