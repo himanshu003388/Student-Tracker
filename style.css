@@ -2341,18 +2341,18 @@ td {
   .nav-links a {
     flex: 1;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    text-align: center;
-    padding: clamp(0.25rem, 1vh, 0.4rem);
-    font-size: clamp(0.6rem, 2.5vw, 0.75rem);
-    gap: clamp(0.15rem, 0.5vh, 0.25rem);
+    padding: clamp(0.5rem, 1.5vh, 0.75rem);
     border-radius: var(--radius-md);
   }
 
+  .nav-links a span {
+    display: none !important;
+  }
+
   .nav-links a i {
-    font-size: clamp(1.1rem, 5vw, 1.25rem);
+    font-size: clamp(1.25rem, 6vw, 1.5rem);
   }
 
   .mobile-menu-btn {
