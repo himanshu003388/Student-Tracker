@@ -1791,7 +1791,7 @@ function renderNotes() {
                             <a href="${att.url}" target="_blank" class="attachment-thumb" title="${escapeHtml(att.name)}" style="display: inline-flex; align-items: center; justify-content: center; background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; text-decoration: none; color: var(--text-color); width: 100%; height: 100%; box-shadow: var(--shadow-sm); transition: transform 0.2s; position: relative;">
                                 <i class="fas ${icon}" style="position: absolute; font-size: 2rem; color: var(--mute); z-index: 1;"></i>
                                 <img src="${att.thumbData || `https://drive.google.com/thumbnail?id=${att.id}&sz=w200-h200`}" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 2;" onerror="this.style.display='none';">
-                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.6rem; padding: 0.15rem 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; z-index: 3; padding-right: 1.2rem;">
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 0.6rem; padding: 0.15rem 0.3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; z-index: 3; padding-right: 1.2rem; box-sizing: border-box;">
                                     ${escapeHtml(att.name)}
                                 </div>
                             </a>
