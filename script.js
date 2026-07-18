@@ -275,6 +275,7 @@ async function uploadFileToDrive(file) {
     };
 
     const boundary = '-------314159265358979323846';
+    const first_delimiter = "--" + boundary + "\r\n";
     const delimiter = "\r\n--" + boundary + "\r\n";
     const close_delim = "\r\n--" + boundary + "--";
 
@@ -284,8 +285,8 @@ async function uploadFileToDrive(file) {
         reader.onload = async () => {
             try {
                 const metadataBlob = new Blob([
-                    delimiter,
-                    'Content-Type: application/json\r\n\r\n',
+                    first_delimiter,
+                    'Content-Type: application/json; charset=UTF-8\r\n\r\n',
                     JSON.stringify(metadata),
                     delimiter,
                     `Content-Type: ${file.type}\r\n\r\n`
