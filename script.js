@@ -74,7 +74,11 @@ function initGoogleAuth() {
         if (cached && cached.expiresAt > Date.now()) {
             accessToken = cached.token;
             updateAuthUI(true);
-            syncFromDrive();
+            if (localStorage.getItem('pending_sync') === 'true') {
+                syncToDrive(appState);
+            } else {
+                syncFromDrive();
+            }
         }
     } catch (e) { }
 
@@ -88,7 +92,11 @@ function initGoogleAuth() {
                 const expiresAt = Date.now() + (tokenResponse.expires_in * 1000) - 60000;
                 localStorage.setItem('cs_google_token', JSON.stringify({ token: accessToken, expiresAt }));
                 updateAuthUI(true);
-                syncFromDrive();
+                if (localStorage.getItem('pending_sync') === 'true') {
+                    syncToDrive(appState);
+                } else {
+                    syncFromDrive();
+                }
             }
         },
     });
@@ -167,7 +175,7 @@ async function syncToDrive(stateToSync) {
 
         if (fileId) {
             // If file exists, just update the content using uploadType=media (simplest and most reliable)
-            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+            const patchRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -175,6 +183,7 @@ async function syncToDrive(stateToSync) {
                 },
                 body: fileContent
             });
+            if (!patchRes.ok) throw new Error('Drive API error on update');
         } else {
             // If file doesn't exist, create it in appDataFolder using multipart/related
             const metadata = {
@@ -194,7 +203,7 @@ async function syncToDrive(stateToSync) {
                 fileContent +
                 close_delim;
 
-            await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            const createRes = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -202,10 +211,13 @@ async function syncToDrive(stateToSync) {
                 },
                 body: multipartRequestBody
             });
+            if (!createRes.ok) throw new Error('Drive API error on create');
         }
         console.log("Successfully synced to Google Drive!");
+        localStorage.removeItem('pending_sync');
     } catch (e) {
-        console.error('Error syncing to drive:', e);
+        console.error('Error syncing to drive, will retry when online:', e);
+        localStorage.setItem('pending_sync', 'true');
     }
 }
 
@@ -359,13 +371,27 @@ window.addEventListener('load', initGoogleAuth);
 // -------------------------------
 
 function scheduleSyncToDrive(state) {
-    if (!accessToken || isSyncing) return;
+    if (!accessToken || isSyncing) {
+        if (!accessToken) localStorage.setItem('pending_sync', 'true');
+        return;
+    }
+    if (!navigator.onLine) {
+        localStorage.setItem('pending_sync', 'true');
+        return;
+    }
     if (syncTimeout) clearTimeout(syncTimeout);
     // Debounce the upload to avoid rapid overlapping API calls
     syncTimeout = setTimeout(() => {
         syncToDrive(state);
     }, 500);
 }
+
+window.addEventListener('online', () => {
+    if (accessToken && localStorage.getItem('pending_sync') === 'true') {
+        console.log("Back online! Syncing pending changes to Google Drive...");
+        syncToDrive(appState);
+    }
+});
 
 function saveState() {
     localStorage.setItem('cs_dashboard_data', JSON.stringify(appState));
