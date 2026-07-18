@@ -1,5 +1,5 @@
 const DEFAULT_STATE = {
-    theme: 'light',
+    theme: 'dark',
     links: [
         { id: 1, name: 'LinkedIn', url: 'https://linkedin.com', icon: 'fab fa-linkedin' },
         { id: 2, name: 'GitHub', url: 'https://github.com', icon: 'fab fa-github' },
@@ -1908,8 +1908,8 @@ function renderNotes() {
                     <div class="note-footer" style="margin-top: 1rem;">
                         <span>${escapeHtml(note.date)}</span>
                         <div>
-                            <button class="btn-text" onclick="editNote(${note.id})"><i class="fas fa-edit"></i></button>
-                            <button class="btn-text" onclick="deleteNote(${note.id})"><i class="fas fa-trash"></i></button>
+                            <button class="btn-text" onclick="editNote('${note.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-text" onclick="deleteNote('${note.id}')"><i class="fas fa-trash"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1924,7 +1924,7 @@ if (document.getElementById('note-search')) {
 }
 
 window.deleteNote = (id) => {
-    const note = appState.notes.find(n => n.id === id);
+    const note = appState.notes.find(n => String(n.id) === String(id));
     if (note && note.attachments && note.attachments.length > 0) {
         if (!confirm('This note contains attachments. Are you sure you want to delete it and remove the files from Google Drive?')) {
             return;
@@ -1945,13 +1945,13 @@ window.deleteNote = (id) => {
         if (!confirm('Are you sure you want to delete this note?')) return;
     }
 
-    appState.notes = appState.notes.filter(n => n.id !== id);
+    appState.notes = appState.notes.filter(n => String(n.id) !== String(id));
     saveState();
     renderNotes();
 };
 
 window.renameNoteAttachment = async (noteId, attId) => {
-    const note = appState.notes.find(n => n.id === noteId);
+    const note = appState.notes.find(n => String(n.id) === String(noteId));
     if (!note) return;
     const att = note.attachments.find(a => a.id === attId);
     if (!att) return;
@@ -2021,7 +2021,7 @@ window.renameNoteAttachment = async (noteId, attId) => {
 };
 
 window.editNote = (id) => {
-    const note = appState.notes.find(n => n.id === id);
+    const note = appState.notes.find(n => String(n.id) === String(id));
     if (!note) return;
     showModal('Edit Note', `
         <form id="edit-note-form">

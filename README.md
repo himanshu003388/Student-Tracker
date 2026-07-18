@@ -17,8 +17,10 @@ An elegant workspace to manage daily tasks, track habits, log finances, prepare 
 </div>
 
 ## ✨ What's New?
-- **☁️ Google Drive Sync (New!)**: Seamlessly sync your data across devices using Google Authentication. Never lose your progress!
-- **📚 Documents Manager**: Organize and upload your study materials, notes, and resources directly to your connected Google Drive.
+- **☁️ Google Drive Sync Synchronization**: Seamlessly sync your data across devices using Google Authentication, with enhanced stability and robust data saving.
+- **📱 Mobile-Optimized Google Sign-In**: Streamlined mobile login experience with a seamless pop-up modal for Google ID authentication, eliminating disruptive page redirects.
+- **📈 File Upload Progress UI**: Real-time visual progress tracking when uploading documents and study materials directly to your connected Google Drive.
+- **💰 Enhanced Money Tracker**: Upgraded financial management with refined logging functionality, robust debugging, and comprehensive expense tracking features.
 - **⏰ Exam Countdown Tracker**: Keep track of upcoming exams with a built-in countdown system right on your dashboard.
 
 ---

@@ -13,7 +13,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <meta name="theme-color" content="#f5f5f5" id="theme-color-meta">
+    <meta name="theme-color" content="#050505" id="theme-color-meta">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -24,7 +24,7 @@
         (function () {
             var e;
             try { e = JSON.parse(localStorage.getItem('cs_dashboard_data')) } catch (t) { }
-            var n = e && e.theme || 'light';
+            var n = e && e.theme || 'dark';
             window.initialTheme = n;
             document.body.className = n === 'dark' ? 'dark-mode' : 'light-mode';
             var o = document.getElementById('theme-color-meta');
