@@ -41,8 +41,8 @@
                         <span>Dashboard</span></a></li>
                 <li><a href="#habits" data-section="habits"><i class="fas fa-calendar-check"></i>
                         <span>Habits</span></a></li>
-                <li><a href="#money" data-section="money"><i class="fas fa-wallet"></i> <span>Money Tracker</span></a>
-                </li>
+                <li><a href="#money" data-section="money"><i class="fas fa-wallet"></i> <span>Money Tracker</span></a></li>
+                <li><a href="#documents" data-section="documents"><i class="fas fa-folder-open"></i> <span>Documents</span></a></li>
             </ul>
             <div class="nav-actions">
                 <button id="auth-btn" class="auth-btn btn-secondary small">
@@ -548,6 +548,22 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documents" class="section-content">
+            <div class="documents-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem;">
+                <h1><i class="fas fa-folder-open"></i> My Documents</h1>
+                <div class="documents-actions" style="display: flex; gap: 1rem;">
+                    <input type="text" id="document-search" class="search-input" placeholder="Search documents...">
+                    <input type="file" id="upload-document-input" style="display: none;" multiple>
+                    <button class="btn-primary" onclick="document.getElementById('upload-document-input').click()" id="upload-doc-btn"><i class="fas fa-upload"></i> Upload</button>
+                </div>
+            </div>
+            
+            <div id="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
+                <!-- Document cards will be injected here -->
             </div>
         </section>
     </main>

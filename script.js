@@ -39,6 +39,7 @@ const DEFAULT_STATE = {
         transactions: [],
         filters: { month: 'all', category: 'all', type: 'all', search: '', sortOrder: 'desc' }
     },
+    documents: [],
     _notesSeeded: 'v1'
 };
 
@@ -552,6 +553,7 @@ function renderAll() {
     renderExams();
     renderHabits();
     renderNotes();
+    renderDocuments();
     updateStats();
 
     initHabitsChart();
@@ -2074,6 +2076,21 @@ function sanitizeAppState(data) {
     cleanState.habitStreak = Math.max(0, Number(data.habitStreak) || 0);
     cleanState.lastHabitUpdate = data.lastHabitUpdate ? String(data.lastHabitUpdate) : null;
 
+    if (Array.isArray(data.documents)) {
+        cleanState.documents = data.documents
+            .filter(doc => doc && typeof doc === 'object' && doc.name)
+            .map(doc => ({
+                id: String(doc.id || ''),
+                name: String(doc.name || ''),
+                url: String(doc.url || ''),
+                mimeType: String(doc.mimeType || ''),
+                thumbData: doc.thumbData ? String(doc.thumbData) : null,
+                dateAdded: String(doc.dateAdded || getLocalDateKey())
+            }));
+    } else {
+        cleanState.documents = [];
+    }
+
     if (Array.isArray(data.notes)) {
         cleanState.notes = data.notes
             .filter(note => note && typeof note === 'object' && note.title && note.content)
@@ -2184,9 +2201,10 @@ if (elements.importBtn) {
 }
 
 if (elements.importFile) {
-    elements.importFile.addEventListener('change', (e) => {
-        const file = e.target.files[0];
+    document.getElementById('import-file').addEventListener('change', (event) => {
+        const file = event.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
@@ -2199,6 +2217,136 @@ if (elements.importFile) {
             }
         };
         reader.readAsText(file);
+    });
+}
+
+// --- Documents Section Logic ---
+function renderDocuments() {
+    const grid = document.getElementById('documents-grid');
+    if (!grid) return;
+    
+    const searchTerm = (document.getElementById('document-search')?.value || '').toLowerCase();
+    const filteredDocs = (appState.documents || []).filter(doc => 
+        doc.name.toLowerCase().includes(searchTerm)
+    );
+
+    if (filteredDocs.length === 0) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 4rem; text-align: center; color: var(--mute);">
+            <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <p>No documents found. Upload your marksheets, IDs, and assignments here.</p>
+        </div>`;
+        return;
+    }
+
+    grid.innerHTML = filteredDocs.map(doc => {
+        const icon = doc.mimeType && doc.mimeType.includes('pdf') ? 'fa-file-pdf' : 'fa-file-image';
+        return `
+        <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+            <a href="${doc.url}" target="_blank" style="display: block; position: relative; height: 160px; background: var(--canvas-soft); text-decoration: none; color: inherit;">
+                <i class="fas ${icon}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: var(--mute); z-index: 1;"></i>
+                <img src="${doc.thumbData || `https://drive.google.com/thumbnail?id=${doc.id}&sz=w400-h400`}" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 2;" onerror="this.style.display='none';">
+            </a>
+            <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1;">
+                <h4 style="margin: 0; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                    <span style="font-size: 0.75rem; color: var(--mute);">${escapeHtml(doc.dateAdded)}</span>
+                    <button class="btn-text" onclick="deleteDocument('${doc.id}')" style="color: #ef4444;"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.deleteDocument = async (id) => {
+    if (!confirm('Are you sure you want to permanently delete this document from Google Drive?')) return;
+    
+    if (accessToken && navigator.onLine) {
+        try {
+            await fetch(`https://www.googleapis.com/drive/v3/files/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+        } catch(e) {
+            console.error("Failed to delete document from drive:", e);
+        }
+    }
+    appState.documents = (appState.documents || []).filter(d => d.id !== id);
+    saveState();
+    renderDocuments();
+};
+
+if (document.getElementById('document-search')) {
+    document.getElementById('document-search').addEventListener('input', renderDocuments);
+}
+
+const uploadDocInput = document.getElementById('upload-document-input');
+if (uploadDocInput) {
+    uploadDocInput.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (files.length === 0) return;
+        
+        if (!accessToken) {
+            alert("Please wait for Google Drive to connect, or sign in to upload documents.");
+            e.target.value = '';
+            return;
+        }
+
+        const labelBtn = document.getElementById('upload-doc-btn');
+        const originalText = labelBtn.innerHTML;
+        labelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        labelBtn.style.pointerEvents = 'none';
+        
+        if (!appState.documents) appState.documents = [];
+
+        for (let i = 0; i < files.length; i++) {
+            try {
+                let thumbData = null;
+                if (files[i].type.startsWith('image/')) {
+                    thumbData = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const MAX_SIZE = 400;
+                                let width = img.width; let height = img.height;
+                                if (width > height) {
+                                    if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                                } else {
+                                    if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                                }
+                                canvas.width = width; canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                resolve(canvas.toDataURL('image/jpeg', 0.6));
+                            };
+                            img.onerror = () => resolve(null);
+                            img.src = ev.target.result;
+                        };
+                        reader.onerror = () => resolve(null);
+                        reader.readAsDataURL(files[i]);
+                    });
+                }
+                const fileData = await uploadFileToDrive(files[i]);
+                appState.documents.push({
+                    id: fileData.id,
+                    name: files[i].name.replace(/\.[^/.]+$/, ""), // Strip extension for display title
+                    url: fileData.webViewLink,
+                    mimeType: files[i].type,
+                    thumbData: thumbData,
+                    dateAdded: getLocalDateKey()
+                });
+            } catch (err) {
+                console.error("Upload error", err);
+                alert("Failed to upload " + files[i].name);
+            }
+        }
+        
+        labelBtn.innerHTML = originalText;
+        labelBtn.style.pointerEvents = 'auto';
+        e.target.value = '';
+        saveState();
+        renderDocuments();
     });
 }
 
