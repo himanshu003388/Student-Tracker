@@ -2911,6 +2911,7 @@ if (uploadDocInput) {
             }
         }
         
+        if (progressContainer) progressContainer.classList.add('hidden');
         labelBtn.innerHTML = originalText;
         labelBtn.style.pointerEvents = 'auto';
         e.target.value = '';
