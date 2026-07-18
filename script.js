@@ -2506,11 +2506,12 @@ function sanitizeAppState(data) {
                 .map(t => ({
                     id: Number(t.id) || Date.now(),
                     date: String(t.date || getLocalDateKey()).trim(),
-                    type: (t.type === 'Income' || t.type === 'Expense') ? t.type : 'Expense',
+                    type: (t.type === 'Income' || t.type === 'Expense' || t.type === 'Lent' || t.type === 'Borrowed') ? t.type : 'Expense',
                     amount: Math.max(0, parseFloat(t.amount) || 0),
                     category: String(t.category || 'Other').trim(),
                     mode: String(t.mode || 'UPI').trim(),
-                    notes: String(t.notes || '').trim()
+                    notes: String(t.notes || '').trim(),
+                    person: t.person ? String(t.person).trim() : ''
                 }));
         }
 
