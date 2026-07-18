@@ -1916,29 +1916,61 @@ window.renameNoteAttachment = async (noteId, attId) => {
     }
     const currentNameWithoutExt = ext ? att.name.substring(0, lastDot) : att.name;
 
-    const newNameWithoutExt = prompt("Enter new attachment name:", currentNameWithoutExt);
-    if (!newNameWithoutExt || newNameWithoutExt === currentNameWithoutExt) return;
+    showModal('Rename Attachment', `
+        <form id="rename-att-form">
+            <div class="form-group">
+                <label>New Name</label>
+                <input type="text" id="rename-att-input" value="${escapeHtml(currentNameWithoutExt)}" required>
+            </div>
+            <button type="submit" id="rename-att-btn" class="btn-primary block" style="margin-top: 1rem;">Rename</button>
+        </form>
+    `);
     
-    const newName = newNameWithoutExt + ext;
-    
-    if (accessToken && navigator.onLine) {
-        try {
-            await fetch(`https://www.googleapis.com/drive/v3/files/${attId}`, {
-                method: 'PATCH',
-                headers: { 
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ name: newName })
-            });
-        } catch(e) {
-            console.error("Failed to rename attachment on drive:", e);
-            alert("Failed to rename file in Google Drive. Changes will only apply locally.");
+    setTimeout(() => {
+        const input = document.getElementById('rename-att-input');
+        if (input) {
+            input.focus();
+            input.select();
         }
-    }
-    att.name = newName;
-    saveState();
-    renderNotes();
+    }, 100);
+    
+    document.getElementById('rename-att-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newNameWithoutExt = document.getElementById('rename-att-input').value.trim();
+        if (!newNameWithoutExt || newNameWithoutExt === currentNameWithoutExt) {
+            closeModal();
+            return;
+        }
+        
+        const btn = document.getElementById('rename-att-btn');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Renaming...';
+            btn.style.pointerEvents = 'none';
+        }
+        
+        const newName = newNameWithoutExt + ext;
+        
+        if (accessToken && navigator.onLine) {
+            try {
+                await fetch(`https://www.googleapis.com/drive/v3/files/${attId}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: newName })
+                });
+            } catch(err) {
+                console.error("Failed to rename attachment on drive:", err);
+                alert("Failed to rename file in Google Drive. Changes will only apply locally.");
+            }
+        }
+        
+        att.name = newName;
+        saveState();
+        renderNotes();
+        closeModal();
+    });
 };
 
 window.editNote = (id) => {
@@ -2539,64 +2571,82 @@ window.navigateToFolder = (folderId) => {
 };
 
 window.createNewFolder = async () => {
-    const folderName = prompt("Enter folder name:");
-    if (!folderName) return;
-    
     if (!accessToken) {
         alert("Please sign in to Google Drive to create folders.");
         return;
     }
     
-    const newFolderBtn = document.getElementById('new-folder-btn');
-    if (newFolderBtn) {
-        newFolderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
-        newFolderBtn.style.pointerEvents = 'none';
-    }
+    showModal('New Folder', `
+        <form id="create-folder-form">
+            <div class="form-group">
+                <label>Folder Name</label>
+                <input type="text" id="new-folder-name" required placeholder="Enter folder name">
+            </div>
+            <button type="submit" id="create-folder-btn" class="btn-primary block" style="margin-top: 1rem;">Create Folder</button>
+        </form>
+    `);
     
-    try {
-        let actualParentId = currentFolderId;
-        if (currentFolderId === 'root') {
-            actualParentId = await getOrCreateDriveFolder('Student Tracker Documents');
+    setTimeout(() => {
+        const input = document.getElementById('new-folder-name');
+        if (input) input.focus();
+    }, 100);
+
+    document.getElementById('create-folder-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const folderName = document.getElementById('new-folder-name').value.trim();
+        if (!folderName) return;
+        
+        const newFolderBtn = document.getElementById('create-folder-btn');
+        if (newFolderBtn) {
+            newFolderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            newFolderBtn.style.pointerEvents = 'none';
         }
         
-        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
+        try {
+            let actualParentId = currentFolderId;
+            if (currentFolderId === 'root') {
+                actualParentId = await getOrCreateDriveFolder('Student Tracker Documents');
+            }
+            
+            const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: folderName,
+                    mimeType: 'application/vnd.google-apps.folder',
+                    parents: [actualParentId]
+                })
+            });
+            
+            if (!createRes.ok) throw new Error("Failed to create folder");
+            const createData = await createRes.json();
+            
+            if (!appState.documents) appState.documents = [];
+            appState.documents.push({
+                id: createData.id,
                 name: folderName,
+                url: `https://drive.google.com/drive/folders/${createData.id}`,
                 mimeType: 'application/vnd.google-apps.folder',
-                parents: [actualParentId]
-            })
-        });
-        
-        if (!createRes.ok) throw new Error("Failed to create folder");
-        const createData = await createRes.json();
-        
-        if (!appState.documents) appState.documents = [];
-        appState.documents.push({
-            id: createData.id,
-            name: folderName,
-            url: `https://drive.google.com/drive/folders/${createData.id}`,
-            mimeType: 'application/vnd.google-apps.folder',
-            thumbData: null,
-            dateAdded: getLocalDateKey(),
-            parentId: currentFolderId,
-            _createdTS: Date.now()
-        });
-        saveState();
-        renderDocuments();
-    } catch (err) {
-        console.error("Create folder error", err);
-        alert("Failed to create folder.");
-    }
-    
-    if (newFolderBtn) {
-        newFolderBtn.innerHTML = '<i class="fas fa-folder-plus"></i> New Folder';
-        newFolderBtn.style.pointerEvents = 'auto';
-    }
+                thumbData: null,
+                dateAdded: getLocalDateKey(),
+                parentId: currentFolderId,
+                _createdTS: Date.now()
+            });
+            saveState();
+            renderDocuments();
+            closeModal();
+        } catch (err) {
+            console.error("Create folder error", err);
+            alert("Failed to create folder.");
+            if (newFolderBtn) {
+                newFolderBtn.innerHTML = 'Create Folder';
+                newFolderBtn.style.pointerEvents = 'auto';
+            }
+        }
+    });
 };
 
 // --- Documents Section Logic ---
@@ -2673,42 +2723,75 @@ function renderDocuments() {
 window.renameDocument = async (id) => {
     const doc = appState.documents.find(d => d.id === id);
     if (!doc) return;
-    const newNameWithoutExt = prompt("Enter new document name:", doc.name);
-    if (!newNameWithoutExt || newNameWithoutExt === doc.name) return;
     
-    let finalName = newNameWithoutExt;
+    showModal('Rename', `
+        <form id="rename-doc-form">
+            <div class="form-group">
+                <label>New Name</label>
+                <input type="text" id="rename-doc-input" value="${escapeHtml(doc.name)}" required>
+            </div>
+            <button type="submit" id="rename-doc-btn" class="btn-primary block" style="margin-top: 1rem;">Rename</button>
+        </form>
+    `);
     
-    if (accessToken && navigator.onLine) {
-        try {
-            if (doc.mimeType !== 'application/vnd.google-apps.folder') {
-                const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?fields=name`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                if (getRes.ok) {
-                    const getData = await getRes.json();
-                    const lastDot = getData.name.lastIndexOf('.');
-                    if (lastDot > 0) {
-                        finalName = newNameWithoutExt + getData.name.substring(lastDot);
+    setTimeout(() => {
+        const input = document.getElementById('rename-doc-input');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }, 100);
+    
+    document.getElementById('rename-doc-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newNameWithoutExt = document.getElementById('rename-doc-input').value.trim();
+        if (!newNameWithoutExt || newNameWithoutExt === doc.name) {
+            closeModal();
+            return;
+        }
+        
+        const btn = document.getElementById('rename-doc-btn');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Renaming...';
+            btn.style.pointerEvents = 'none';
+        }
+        
+        let finalName = newNameWithoutExt;
+        
+        if (accessToken && navigator.onLine) {
+            try {
+                if (doc.mimeType !== 'application/vnd.google-apps.folder') {
+                    const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?fields=name`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    if (getRes.ok) {
+                        const getData = await getRes.json();
+                        const lastDot = getData.name.lastIndexOf('.');
+                        if (lastDot > 0) {
+                            finalName = newNameWithoutExt + getData.name.substring(lastDot);
+                        }
                     }
                 }
+                
+                await fetch(`https://www.googleapis.com/drive/v3/files/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: finalName })
+                });
+            } catch(err) {
+                console.error("Failed to rename document on drive:", err);
+                alert("Failed to rename file in Google Drive. Changes will only apply locally.");
             }
-            
-            await fetch(`https://www.googleapis.com/drive/v3/files/${id}`, {
-                method: 'PATCH',
-                headers: { 
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ name: finalName })
-            });
-        } catch(e) {
-            console.error("Failed to rename document on drive:", e);
-            alert("Failed to rename file in Google Drive. Changes will only apply locally.");
         }
-    }
-    doc.name = newNameWithoutExt;
-    saveState();
-    renderDocuments();
+        
+        doc.name = newNameWithoutExt;
+        saveState();
+        renderDocuments();
+        closeModal();
+    });
 };
 
 window.deleteDocument = async (id) => {
