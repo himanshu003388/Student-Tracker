@@ -153,6 +153,90 @@ function updateAuthUI(isLoggedIn, isExpired = false) {
     }
 }
 
+async function syncDriveFolders(data) {
+    if (!accessToken) return;
+    try {
+        const docFolderId = await getOrCreateDriveFolder('Student Tracker Documents');
+        const notesFolderId = await getOrCreateDriveFolder('Student Tracker Notes');
+        
+        const fetchFiles = async (folderId) => {
+            if (!folderId) return [];
+            const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,webViewLink)`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch folder contents');
+            const json = await res.json();
+            return json.files || [];
+        };
+
+        const [driveDocs, driveNotes] = await Promise.all([
+            fetchFiles(docFolderId),
+            fetchFiles(notesFolderId)
+        ]);
+        
+        // 1. Sync Documents
+        if (!data.documents) data.documents = [];
+        const driveDocIds = new Set(driveDocs.map(f => f.id));
+        
+        // Remove locally deleted documents (ones missing from Drive)
+        data.documents = data.documents.filter(d => driveDocIds.has(d.id));
+        
+        // Add new files from Drive
+        const existingDocIds = new Set(data.documents.map(d => d.id));
+        for (const file of driveDocs) {
+            if (!existingDocIds.has(file.id)) {
+                data.documents.push({
+                    id: file.id,
+                    name: file.name.replace(/\.[^/.]+$/, ""),
+                    url: file.webViewLink,
+                    mimeType: file.mimeType,
+                    thumbData: null,
+                    dateAdded: getLocalDateKey()
+                });
+            }
+        }
+        
+        // 2. Sync Notes (Check attachments)
+        if (!data.notes) data.notes = [];
+        const driveNotesIds = new Set(driveNotes.map(f => f.id));
+        
+        // Remove deleted attachments from Notes
+        data.notes.forEach(note => {
+            if (note.attachments) {
+                note.attachments = note.attachments.filter(att => driveNotesIds.has(att.id));
+            }
+        });
+        
+        // Add new files from Drive as Quick Notes
+        const existingAttIds = new Set();
+        data.notes.forEach(n => {
+            if (n.attachments) n.attachments.forEach(att => existingAttIds.add(att.id));
+        });
+        
+        for (const file of driveNotes) {
+            if (!existingAttIds.has(file.id)) {
+                data.notes.push({
+                    id: Date.now() + Math.random(),
+                    title: file.name.replace(/\.[^/.]+$/, ""),
+                    content: 'Imported from Google Drive.',
+                    date: getLocalDateKey(),
+                    attachments: [{
+                        id: file.id,
+                        name: file.name,
+                        url: file.webViewLink,
+                        mimeType: file.mimeType,
+                        thumbData: null
+                    }]
+                });
+                existingAttIds.add(file.id);
+            }
+        }
+    } catch (e) {
+        console.error("Deep folder sync failed", e);
+    }
+}
+
 async function syncFromDrive() {
     if (!accessToken) return;
     try {
@@ -170,6 +254,7 @@ async function syncFromDrive() {
             }
             const data = await res.json();
             if (data && data.theme) { // Simple check for valid state
+                await syncDriveFolders(data);
                 isSyncing = true;
                 const newStateStr = JSON.stringify(sanitizeAppState(data));
                 const oldStateStr = localStorage.getItem('cs_dashboard_data');
@@ -266,19 +351,19 @@ async function getDriveFileId() {
     return null;
 }
 
-let uploadFolderIdCache = null;
+const uploadFolderIdCache = {};
 
-async function getOrCreateUploadFolder() {
-    if (uploadFolderIdCache) return uploadFolderIdCache;
+async function getOrCreateDriveFolder(folderName) {
+    if (uploadFolderIdCache[folderName]) return uploadFolderIdCache[folderName];
     try {
-        const q = encodeURIComponent("name='Student Tracker Uploads' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+        const q = encodeURIComponent(`name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
         const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) {
             const err = await res.text();
             if (res.status === 401 || res.status === 403 || err.includes('insufficientScopes')) {
-                localStorage.removeItem('google_access_token');
+                localStorage.removeItem('cs_google_token');
                 alert("Google Drive requires updated permissions for file uploads. The page will now reload so you can sign in again.");
                 location.reload();
                 throw new Error("Reloading for new permissions...");
@@ -287,8 +372,8 @@ async function getOrCreateUploadFolder() {
         }
         const data = await res.json();
         if (data.files && data.files.length > 0) {
-            uploadFolderIdCache = data.files[0].id;
-            return uploadFolderIdCache;
+            uploadFolderIdCache[folderName] = data.files[0].id;
+            return uploadFolderIdCache[folderName];
         }
         
         // Create folder
@@ -299,14 +384,14 @@ async function getOrCreateUploadFolder() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                name: 'Student Tracker Uploads',
+                name: folderName,
                 mimeType: 'application/vnd.google-apps.folder'
             })
         });
         if (!createRes.ok) {
             const err = await createRes.text();
             if (createRes.status === 401 || createRes.status === 403 || err.includes('insufficientScopes')) {
-                localStorage.removeItem('google_access_token');
+                localStorage.removeItem('cs_google_token');
                 alert("Google Drive requires updated permissions for file uploads. The page will now reload so you can sign in again.");
                 location.reload();
                 throw new Error("Reloading for new permissions...");
@@ -315,8 +400,8 @@ async function getOrCreateUploadFolder() {
         }
         const createData = await createRes.json();
         if (createData.id) {
-            uploadFolderIdCache = createData.id;
-            return uploadFolderIdCache;
+            uploadFolderIdCache[folderName] = createData.id;
+            return uploadFolderIdCache[folderName];
         }
     } catch (e) {
         console.error('Error creating upload folder:', e);
@@ -325,10 +410,10 @@ async function getOrCreateUploadFolder() {
     return null;
 }
 
-async function uploadFileToDrive(file) {
+async function uploadFileToDrive(file, folderName) {
     if (!accessToken) throw new Error('Not authenticated');
     
-    const folderId = await getOrCreateUploadFolder();
+    const folderId = await getOrCreateDriveFolder(folderName);
     if (!folderId) throw new Error('Could not get upload folder');
 
     const metadata = {
@@ -1826,7 +1911,7 @@ if (globalAddFiles) {
                         reader.readAsDataURL(files[i]);
                     });
                 }
-                const fileData = await uploadFileToDrive(files[i]);
+                const fileData = await uploadFileToDrive(files[i], 'Student Tracker Notes');
                 attachments.push({
                     id: fileData.id,
                     name: fileData.name,
@@ -2327,7 +2412,7 @@ if (uploadDocInput) {
                         reader.readAsDataURL(files[i]);
                     });
                 }
-                const fileData = await uploadFileToDrive(files[i]);
+                const fileData = await uploadFileToDrive(files[i], 'Student Tracker Documents');
                 appState.documents.push({
                     id: fileData.id,
                     name: files[i].name.replace(/\.[^/.]+$/, ""), // Strip extension for display title
