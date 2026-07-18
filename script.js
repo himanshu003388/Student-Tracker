@@ -441,7 +441,7 @@ async function getOrCreateDriveFolder(folderName) {
     return null;
 }
 
-async function uploadFileToDrive(file, folderNameOrId, isId = false) {
+async function uploadFileToDrive(file, folderNameOrId, isId = false, onProgress = null) {
     if (!accessToken) throw new Error('Not authenticated');
     
     let folderId = folderNameOrId;
@@ -478,27 +478,38 @@ async function uploadFileToDrive(file, folderNameOrId, isId = false) {
 
                 const body = new Blob([metadataBlob, fileBlob, closeBlob]);
 
-                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink', {
-                    method: 'POST',
-                    headers: { 
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': `multipart/related; boundary=${boundary}`
-                    },
-                    body: body
-                });
-                
-                if (!res.ok) {
-                    const err = await res.text();
-                    reject(new Error(`Upload failed HTTP ${res.status}: ${err}`));
-                    return;
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink');
+                xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+                xhr.setRequestHeader('Content-Type', `multipart/related; boundary=${boundary}`);
+
+                if (onProgress && xhr.upload) {
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            onProgress(e.loaded, e.total);
+                        }
+                    };
                 }
-                
-                const data = await res.json();
-                if (data.id) {
-                    resolve(data);
-                } else {
-                    reject(new Error("No ID in response"));
-                }
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data.id) {
+                                resolve(data);
+                            } else {
+                                reject(new Error("No ID in response"));
+                            }
+                        } catch(err) {
+                            reject(err);
+                        }
+                    } else {
+                        reject(new Error(`Upload failed HTTP ${xhr.status}: ${xhr.responseText}`));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error("Network Error"));
+                xhr.send(body);
             } catch (err) {
                 reject(err);
             }
@@ -1943,11 +1954,21 @@ if (globalAddFiles) {
         const originalText = labelBtn.innerHTML;
         labelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
         labelBtn.style.pointerEvents = 'none';
+
+        const progressContainer = document.getElementById('notes-upload-progress');
+        const filenameDisplay = document.getElementById('notes-upload-filename');
+        const statsDisplay = document.getElementById('notes-upload-stats');
+        const progressBar = document.getElementById('notes-upload-bar');
+
+        if (progressContainer) progressContainer.classList.remove('hidden');
         
         let attachments = [];
         
         for (let i = 0; i < files.length; i++) {
             try {
+                if (filenameDisplay) filenameDisplay.textContent = `Uploading ${files[i].name}...`;
+                if (progressBar) progressBar.style.width = '0%';
+                if (statsDisplay) statsDisplay.textContent = `0% (0 / ${(files[i].size / (1024*1024)).toFixed(2)} MB)`;
                 let thumbData = null;
                 if (files[i].type.startsWith('image/')) {
                     thumbData = await new Promise((resolve) => {
@@ -1976,7 +1997,13 @@ if (globalAddFiles) {
                         reader.readAsDataURL(files[i]);
                     });
                 }
-                const fileData = await uploadFileToDrive(files[i], 'Student Tracker Notes');
+                const fileData = await uploadFileToDrive(files[i], 'Student Tracker Notes', false, (loaded, total) => {
+                    if (total > 0) {
+                        const percent = Math.round((loaded / total) * 100);
+                        if (progressBar) progressBar.style.width = `${percent}%`;
+                        if (statsDisplay) statsDisplay.textContent = `${percent}% (${(loaded / (1024*1024)).toFixed(2)} / ${(total / (1024*1024)).toFixed(2)} MB)`;
+                    }
+                });
                 attachments.push({
                     id: fileData.id,
                     name: fileData.name,
@@ -2002,7 +2029,8 @@ if (globalAddFiles) {
             saveState();
             renderNotes();
         }
-        
+
+        if (progressContainer) progressContainer.classList.add('hidden');
         labelBtn.innerHTML = originalText;
         labelBtn.style.pointerEvents = 'auto';
         e.target.value = '';
@@ -2595,6 +2623,13 @@ if (uploadDocInput) {
         const originalText = labelBtn.innerHTML;
         labelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
         labelBtn.style.pointerEvents = 'none';
+
+        const progressContainer = document.getElementById('docs-upload-progress');
+        const filenameDisplay = document.getElementById('docs-upload-filename');
+        const statsDisplay = document.getElementById('docs-upload-stats');
+        const progressBar = document.getElementById('docs-upload-bar');
+
+        if (progressContainer) progressContainer.classList.remove('hidden');
         
         if (!appState.documents) appState.documents = [];
 
@@ -2605,6 +2640,9 @@ if (uploadDocInput) {
 
         for (let i = 0; i < files.length; i++) {
             try {
+                if (filenameDisplay) filenameDisplay.textContent = `Uploading ${files[i].name}...`;
+                if (progressBar) progressBar.style.width = '0%';
+                if (statsDisplay) statsDisplay.textContent = `0% (0 / ${(files[i].size / (1024*1024)).toFixed(2)} MB)`;
                 let thumbData = null;
                 if (files[i].type.startsWith('image/')) {
                     thumbData = await new Promise((resolve) => {
@@ -2632,7 +2670,13 @@ if (uploadDocInput) {
                         reader.readAsDataURL(files[i]);
                     });
                 }
-                const fileData = await uploadFileToDrive(files[i], actualParentId, true);
+                const fileData = await uploadFileToDrive(files[i], actualParentId, true, (loaded, total) => {
+                    if (total > 0) {
+                        const percent = Math.round((loaded / total) * 100);
+                        if (progressBar) progressBar.style.width = `${percent}%`;
+                        if (statsDisplay) statsDisplay.textContent = `${percent}% (${(loaded / (1024*1024)).toFixed(2)} / ${(total / (1024*1024)).toFixed(2)} MB)`;
+                    }
+                });
                 appState.documents.push({
                     id: fileData.id,
                     name: files[i].name.replace(/\.[^/.]+$/, ""), // Strip extension for display title

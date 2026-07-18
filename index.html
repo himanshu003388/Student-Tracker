@@ -221,6 +221,16 @@
                             <button id="add-note-btn" class="btn-primary small" style="margin: 0;"><i class="fas fa-plus"></i> New Note</button>
                         </div>
                     </div>
+                    <!-- Upload Progress UI for Notes -->
+                    <div id="notes-upload-progress" class="upload-progress-container hidden" style="padding: 1rem; background: var(--card-bg); border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                            <span id="notes-upload-filename" style="font-weight: 500;">Uploading file...</span>
+                            <span id="notes-upload-stats">0% (0 / 0 MB)</span>
+                        </div>
+                        <div style="width: 100%; background: var(--border); border-radius: 4px; height: 8px; overflow: hidden;">
+                            <div id="notes-upload-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.2s;"></div>
+                        </div>
+                    </div>
                     <div class="notes-grid" id="notes-grid"></div>
                 </div>
             </div>
@@ -567,6 +577,17 @@
                 <!-- Breadcrumbs injected here -->
             </div>
             
+            <!-- Upload Progress UI for Documents -->
+            <div id="docs-upload-progress" class="upload-progress-container hidden" style="padding: 1rem; background: var(--card-bg); border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    <span id="docs-upload-filename" style="font-weight: 500;">Uploading file...</span>
+                    <span id="docs-upload-stats">0% (0 / 0 MB)</span>
+                </div>
+                <div style="width: 100%; background: var(--border); border-radius: 4px; height: 8px; overflow: hidden;">
+                    <div id="docs-upload-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.2s;"></div>
+                </div>
+            </div>
+
             <div id="documents-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
                 <!-- Document cards will be injected here -->
             </div>
