@@ -498,6 +498,11 @@ main {
   box-shadow: var(--shadow-sm);
 }
 
+.btn-secondary.small {
+  padding: 0.4rem 0.875rem;
+  font-size: 0.8125rem;
+}
+
 .btn-text {
   background: none;
   border: none;
