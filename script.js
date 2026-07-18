@@ -912,42 +912,14 @@ function renderTasks() {
     // Only allow drag reorder when showing the full unfiltered list
     const isFiltered = filter !== 'all';
 
-    elements.taskList.innerHTML = filteredTasks.map(task => {
-        let badgeHtml = '';
-        if (task.dueDate && !task.completed) {
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const due = new Date(task.dueDate);
-            // Fix timezone offset issues
-            due.setMinutes(due.getMinutes() + due.getTimezoneOffset());
-            due.setHours(0,0,0,0);
-            
-            const diffTime = due - today;
-            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-            
-            let badgeClass = 'due-later';
-            let badgeText = `Due: ${due.toLocaleDateString()}`;
-            
-            if (diffDays < 0) {
-                badgeClass = 'due-overdue';
-                badgeText = 'Overdue';
-            } else if (diffDays <= 1) {
-                badgeClass = 'due-soon';
-                badgeText = diffDays === 0 ? 'Due Today' : 'Due Tomorrow';
-            }
-            
-            badgeHtml = `<span class="due-date-badge ${badgeClass}">${badgeText}</span>`;
-        }
-
-        return `
+    elements.taskList.innerHTML = filteredTasks.map(task => `
         <li class="task-item ${task.completed ? 'completed' : ''}" data-id="${task.id}" ${!isFiltered ? 'draggable="true"' : ''}>
             ${!isFiltered ? `<div class="task-drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></div>` : ''}
             <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
-            <span>${escapeHtml(task.text)}${badgeHtml}</span>
+            <span>${escapeHtml(task.text)}</span>
             <button class="delete-task" onclick="deleteTask(${task.id})"><i class="fas fa-trash"></i></button>
         </li>
-        `;
-    }).join('');
+    `).join('');
 
     if (!isFiltered) initTasksDragAndDrop();
 }
@@ -955,11 +927,9 @@ function renderTasks() {
 if (elements.addTaskBtn) {
     elements.addTaskBtn.addEventListener('click', () => {
         const text = elements.taskInput.value.trim();
-        const dueDate = elements.taskDueDate ? elements.taskDueDate.value : null;
         if (text) {
-            appState.tasks.push({ id: Date.now(), text, completed: false, date: getLocalDateKey(), dueDate });
+            appState.tasks.push({ id: Date.now(), text, completed: false, date: getLocalDateKey() });
             elements.taskInput.value = '';
-            if (elements.taskDueDate) elements.taskDueDate.value = '';
             saveState();
             renderTasks();
         }
