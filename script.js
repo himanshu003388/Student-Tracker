@@ -62,31 +62,28 @@ let accessToken = null;
 let isSyncing = false;
 let driveFileIdCache = null;
 let syncTimeout = null;
+let tokenRefreshTimer = null;
+
+function scheduleTokenRefresh(expiresInMs) {
+    if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+    // Refresh 2 minutes before expiry (or 30s if tight)
+    let refreshTime = expiresInMs - 120000;
+    if (refreshTime <= 0) refreshTime = expiresInMs - 30000;
+    
+    if (refreshTime > 0) {
+        tokenRefreshTimer = setTimeout(() => {
+            if (tokenClient && accessToken) {
+                console.log("Auto-refreshing Google token silently...");
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }, refreshTime);
+    }
+}
 
 function initGoogleAuth() {
     if (typeof google === 'undefined') {
         setTimeout(initGoogleAuth, 100);
         return;
-    }
-
-    // Check for cached token to maintain session
-    try {
-        const cached = JSON.parse(localStorage.getItem('cs_google_token'));
-        if (cached && cached.token) {
-            accessToken = cached.token;
-            if (cached.expiresAt < Date.now()) {
-                updateAuthUI(true, true);
-            } else {
-                updateAuthUI(true, false);
-            }
-            if (localStorage.getItem('pending_sync') === 'true') {
-                syncToDrive(appState);
-            } else {
-                syncFromDrive();
-            }
-        }
-    } catch (e) {
-        console.error("Error loading initial state:", e);
     }
 
     tokenClient = google.accounts.oauth2.initTokenClient({
@@ -96,17 +93,50 @@ function initGoogleAuth() {
             if (tokenResponse && tokenResponse.access_token) {
                 accessToken = tokenResponse.access_token;
                 // Cache token with 1 min buffer
-                const expiresAt = Date.now() + (tokenResponse.expires_in * 1000) - 60000;
+                const expiresInMs = tokenResponse.expires_in * 1000;
+                const expiresAt = Date.now() + expiresInMs - 60000;
                 localStorage.setItem('cs_google_token', JSON.stringify({ token: accessToken, expiresAt }));
-                updateAuthUI(true);
+                
+                updateAuthUI(true, false);
+                scheduleTokenRefresh(expiresInMs);
+                
+                if (localStorage.getItem('pending_sync') === 'true') {
+                    syncToDrive(appState);
+                } else {
+                    syncFromDrive();
+                }
+            } else if (tokenResponse && tokenResponse.error) {
+                console.warn("Silent token refresh failed:", tokenResponse.error);
+                updateAuthUI(true, true);
+            }
+        },
+    });
+
+    // Check for cached token to maintain session
+    try {
+        const cached = JSON.parse(localStorage.getItem('cs_google_token'));
+        if (cached && cached.token) {
+            accessToken = cached.token;
+            const timeRemaining = cached.expiresAt - Date.now();
+            if (timeRemaining <= 0) {
+                // Token is expired. Use prompt: '' to refresh silently
+                updateAuthUI(true, true);
+                setTimeout(() => {
+                    if (tokenClient) tokenClient.requestAccessToken({ prompt: '' });
+                }, 500);
+            } else {
+                updateAuthUI(true, false);
+                scheduleTokenRefresh(timeRemaining);
                 if (localStorage.getItem('pending_sync') === 'true') {
                     syncToDrive(appState);
                 } else {
                     syncFromDrive();
                 }
             }
-        },
-    });
+        }
+    } catch (e) {
+        console.error("Error loading initial state:", e);
+    }
 
     const authBtn = document.getElementById('auth-btn');
     if (authBtn) {
@@ -122,6 +152,7 @@ function handleAuthClick() {
             google.accounts.oauth2.revoke(accessToken, () => {
                 accessToken = null;
                 localStorage.removeItem('cs_google_token');
+                if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
                 updateAuthUI(false);
             });
         }
