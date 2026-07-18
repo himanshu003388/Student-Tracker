@@ -100,12 +100,14 @@ function initGoogleAuth() {
 
 function handleAuthClick() {
     if (accessToken) {
-        // Sign out
-        google.accounts.oauth2.revoke(accessToken, () => {
-            accessToken = null;
-            localStorage.removeItem('cs_google_token');
-            updateAuthUI(false);
-        });
+        if (confirm('Are you sure you want to sign out of your Google account?')) {
+            // Sign out
+            google.accounts.oauth2.revoke(accessToken, () => {
+                accessToken = null;
+                localStorage.removeItem('cs_google_token');
+                updateAuthUI(false);
+            });
+        }
     } else {
         // Sign in
         tokenClient.requestAccessToken({prompt: 'consent'});
