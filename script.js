@@ -210,21 +210,27 @@ async function syncDriveFolders(data) {
         const NOW = Date.now();
         data.documents = data.documents.filter(d => driveDocIds.has(d.id) || (d._createdTS && (NOW - d._createdTS < 60000)));
         
-        // Add new files from Drive
+        // Sync files from Drive
         const existingDocIds = new Set(data.documents.map(d => d.id));
         for (const file of driveDocs) {
+            const expectedName = file.mimeType === 'application/vnd.google-apps.folder' ? file.name : file.name.replace(/\.[^/.]+$/, "");
             if (!existingDocIds.has(file.id)) {
                 let pid = file.parents && file.parents[0];
                 if (pid === docFolderId) pid = 'root';
                 data.documents.push({
                     id: file.id,
-                    name: file.mimeType === 'application/vnd.google-apps.folder' ? file.name : file.name.replace(/\.[^/.]+$/, ""),
+                    name: expectedName,
                     url: file.webViewLink,
                     mimeType: file.mimeType,
                     thumbData: null,
                     dateAdded: getLocalDateKey(),
                     parentId: pid || 'root'
                 });
+            } else {
+                const doc = data.documents.find(d => d.id === file.id);
+                if (doc && doc.name !== expectedName) {
+                    doc.name = expectedName;
+                }
             }
         }
         
@@ -239,7 +245,7 @@ async function syncDriveFolders(data) {
             }
         });
         
-        // Add new files from Drive as Quick Notes
+        // Add new files from Drive as Quick Notes, and update names of existing ones
         const existingAttIds = new Set();
         data.notes.forEach(n => {
             if (n.attachments) n.attachments.forEach(att => existingAttIds.add(att.id));
@@ -261,6 +267,19 @@ async function syncDriveFolders(data) {
                     }]
                 });
                 existingAttIds.add(file.id);
+            } else {
+                data.notes.forEach(n => {
+                    if (n.attachments) {
+                        const att = n.attachments.find(a => a.id === file.id);
+                        if (att && att.name !== file.name) {
+                            const oldTitle = att.name.replace(/\.[^/.]+$/, "");
+                            if (n.title === oldTitle) {
+                                n.title = file.name.replace(/\.[^/.]+$/, "");
+                            }
+                            att.name = file.name;
+                        }
+                    }
+                });
             }
         }
     } catch (e) {
@@ -294,7 +313,8 @@ async function syncFromDrive() {
                 if (newStateStr !== oldStateStr) {
                     appState = sanitizeAppState(data);
                     localStorage.setItem('cs_dashboard_data', newStateStr);
-                    location.reload(); // Reload to reflect changes globally
+                    renderAll(); 
+                    isSyncing = false;
                 } else {
                     isSyncing = false;
                 }
@@ -304,6 +324,30 @@ async function syncFromDrive() {
         console.error('Error syncing from drive:', e);
     }
 }
+
+setInterval(() => {
+    const isModalOpen = document.getElementById('modal-overlay') && !document.getElementById('modal-overlay').classList.contains('hidden');
+    if (document.visibilityState === 'visible' && accessToken && navigator.onLine && !isSyncing && !isModalOpen) {
+        syncFromDrive();
+    }
+}, 30000);
+
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#sync-notes-btn') || e.target.closest('#sync-docs-btn')) {
+        const btn = e.target.closest('button');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing';
+        btn.style.pointerEvents = 'none';
+        
+        syncFromDrive().then(() => {
+            btn.innerHTML = originalHtml;
+            btn.style.pointerEvents = 'auto';
+        }).catch(() => {
+            btn.innerHTML = originalHtml;
+            btn.style.pointerEvents = 'auto';
+        });
+    }
+});
 
 async function syncToDrive(stateToSync) {
     if (!accessToken || isSyncing) return;
@@ -1864,8 +1908,18 @@ window.renameNoteAttachment = async (noteId, attId) => {
     if (!note) return;
     const att = note.attachments.find(a => a.id === attId);
     if (!att) return;
-    const newName = prompt("Enter new attachment name:", att.name);
-    if (!newName || newName === att.name) return;
+    
+    let ext = "";
+    const lastDot = att.name.lastIndexOf('.');
+    if (lastDot > 0 && lastDot < att.name.length - 1) {
+        ext = att.name.substring(lastDot);
+    }
+    const currentNameWithoutExt = ext ? att.name.substring(0, lastDot) : att.name;
+
+    const newNameWithoutExt = prompt("Enter new attachment name:", currentNameWithoutExt);
+    if (!newNameWithoutExt || newNameWithoutExt === currentNameWithoutExt) return;
+    
+    const newName = newNameWithoutExt + ext;
     
     if (accessToken && navigator.onLine) {
         try {
@@ -2580,25 +2634,40 @@ function renderDocuments() {
 window.renameDocument = async (id) => {
     const doc = appState.documents.find(d => d.id === id);
     if (!doc) return;
-    const newName = prompt("Enter new document name:", doc.name);
-    if (!newName || newName === doc.name) return;
+    const newNameWithoutExt = prompt("Enter new document name:", doc.name);
+    if (!newNameWithoutExt || newNameWithoutExt === doc.name) return;
+    
+    let finalName = newNameWithoutExt;
     
     if (accessToken && navigator.onLine) {
         try {
+            if (doc.mimeType !== 'application/vnd.google-apps.folder') {
+                const getRes = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?fields=name`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (getRes.ok) {
+                    const getData = await getRes.json();
+                    const lastDot = getData.name.lastIndexOf('.');
+                    if (lastDot > 0) {
+                        finalName = newNameWithoutExt + getData.name.substring(lastDot);
+                    }
+                }
+            }
+            
             await fetch(`https://www.googleapis.com/drive/v3/files/${id}`, {
                 method: 'PATCH',
                 headers: { 
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name: newName })
+                body: JSON.stringify({ name: finalName })
             });
         } catch(e) {
             console.error("Failed to rename document on drive:", e);
             alert("Failed to rename file in Google Drive. Changes will only apply locally.");
         }
     }
-    doc.name = newName;
+    doc.name = newNameWithoutExt;
     saveState();
     renderDocuments();
 };
