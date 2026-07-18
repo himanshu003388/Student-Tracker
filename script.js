@@ -2591,34 +2591,35 @@ function initPomodoro() {
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
 
-                    osc.type = 'sine';
+                    osc.type = 'triangle';
                     osc.frequency.setValueAtTime(freq, startTime);
 
                     gain.gain.setValueAtTime(0, startTime);
                     gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.2);
 
                     osc.start(startTime);
-                    osc.stop(startTime + 0.15);
+                    osc.stop(startTime + 0.25);
                 };
 
-                // Play soft dual-tone harmony
-                playTone(659.25, 0.08); // E5
-                playTone(880.00, 0.08); // A5
+                // Play louder dual-tone harmony
+                playTone(880.00, 0.3); // A5
+                playTone(1046.50, 0.3); // C6
             };
 
             const now = audioCtx.currentTime;
-            // Schedule 4 double-beeps (soft alarm ringtone)
-            for (let i = 0; i < 4; i++) {
-                const groupStart = now + i * 1.0;
+            // Schedule 10 groups of 3 rapid beeps (like a digital alarm clock)
+            for (let i = 0; i < 10; i++) {
+                const groupStart = now + i * 1.2;
                 playBeep(groupStart);
-                playBeep(groupStart + 0.2);
+                playBeep(groupStart + 0.25);
+                playBeep(groupStart + 0.50);
             }
 
             // Close the AudioContext after the chime completes to prevent resource leaks
             setTimeout(() => {
                 audioCtx.close().catch(err => console.error("Error closing AudioContext", err));
-            }, 4500);
+            }, 13000);
         } catch (e) {
             console.error("Audio error", e);
         }
