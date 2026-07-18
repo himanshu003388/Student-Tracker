@@ -71,9 +71,13 @@ function initGoogleAuth() {
     // Check for cached token to maintain session
     try {
         const cached = JSON.parse(localStorage.getItem('cs_google_token'));
-        if (cached && cached.expiresAt > Date.now()) {
+        if (cached && cached.token) {
             accessToken = cached.token;
-            updateAuthUI(true);
+            if (cached.expiresAt < Date.now()) {
+                updateAuthUI(true, true);
+            } else {
+                updateAuthUI(true, false);
+            }
             if (localStorage.getItem('pending_sync') === 'true') {
                 syncToDrive(appState);
             } else {
@@ -108,7 +112,8 @@ function initGoogleAuth() {
 }
 
 function handleAuthClick() {
-    if (accessToken) {
+    const cached = JSON.parse(localStorage.getItem('cs_google_token') || '{}');
+    if (accessToken && cached.expiresAt > Date.now()) {
         if (confirm('Are you sure you want to sign out of your Google account?')) {
             // Sign out
             google.accounts.oauth2.revoke(accessToken, () => {
@@ -118,20 +123,32 @@ function handleAuthClick() {
             });
         }
     } else {
-        // Sign in
+        // Sign in or Reconnect
         tokenClient.requestAccessToken({ prompt: 'consent' });
     }
 }
 
-function updateAuthUI(isLoggedIn) {
+function updateAuthUI(isLoggedIn, isExpired = false) {
     const authText = document.getElementById('auth-btn-text');
     const authBtn = document.getElementById('auth-btn');
-    if (isLoggedIn) {
+    if (isExpired) {
+        authText.textContent = 'Reconnect Sync';
+        authBtn.innerHTML = '<i class="fab fa-google"></i> <span id="auth-btn-text">Reconnect Sync</span>';
+        authBtn.style.color = '#ef4444';
+        authBtn.style.borderColor = '#ef4444';
+        authBtn.title = 'Session expired. Click to reconnect Google Drive sync.';
+    } else if (isLoggedIn) {
         authText.textContent = 'Sign Out';
         authBtn.innerHTML = '<i class="fab fa-google"></i> <span id="auth-btn-text">Sign Out</span>';
+        authBtn.style.color = '';
+        authBtn.style.borderColor = '';
+        authBtn.title = '';
     } else {
         authText.textContent = 'Sign In';
         authBtn.innerHTML = '<i class="fab fa-google"></i> <span id="auth-btn-text">Sign In</span>';
+        authBtn.style.color = '';
+        authBtn.style.borderColor = '';
+        authBtn.title = '';
     }
 }
 
@@ -146,6 +163,10 @@ async function syncFromDrive() {
                     'Cache-Control': 'no-cache'
                 }
             });
+            if (!res.ok) {
+                if (res.status === 401) updateAuthUI(true, true);
+                throw new Error('Drive API error');
+            }
             const data = await res.json();
             if (data && data.theme) { // Simple check for valid state
                 isSyncing = true;
@@ -183,7 +204,10 @@ async function syncToDrive(stateToSync) {
                 },
                 body: fileContent
             });
-            if (!patchRes.ok) throw new Error('Drive API error on update');
+            if (!patchRes.ok) {
+                if (patchRes.status === 401) updateAuthUI(true, true);
+                throw new Error('Drive API error on update');
+            }
         } else {
             // If file doesn't exist, create it in appDataFolder using multipart/related
             const metadata = {
@@ -211,7 +235,10 @@ async function syncToDrive(stateToSync) {
                 },
                 body: multipartRequestBody
             });
-            if (!createRes.ok) throw new Error('Drive API error on create');
+            if (!createRes.ok) {
+                if (createRes.status === 401) updateAuthUI(true, true);
+                throw new Error('Drive API error on create');
+            }
         }
         console.log("Successfully synced to Google Drive!");
         localStorage.removeItem('pending_sync');
