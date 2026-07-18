@@ -44,6 +44,7 @@ const DEFAULT_STATE = {
 };
 
 let appState = DEFAULT_STATE;
+let currentKhataPerson = null;
 try {
     const rawState = localStorage.getItem('cs_dashboard_data');
     if (rawState) {
@@ -677,9 +678,21 @@ const elements = {
     moneyTotalIncome: document.getElementById('money-total-income'),
     moneyTotalExpense: document.getElementById('money-total-expense'),
     moneyCurrentBalance: document.getElementById('money-current-balance'),
-    moneyMonthExpense: document.getElementById('money-month-expense'),
-    moneyMonthIncome: document.getElementById('money-month-income'),
-    moneyMonthBalance: document.getElementById('money-month-balance'),
+    moneyTotalLent: document.getElementById('money-total-lent'),
+    moneyTotalBorrowed: document.getElementById('money-total-borrowed'),
+    moneyNetKhata: document.getElementById('money-net-khata'),
+    khataAccountsList: document.getElementById('khata-accounts-list'),
+    viewMoneyManagement: document.getElementById('view-money-management'),
+    viewKhataManagement: document.getElementById('view-khata-management'),
+    tabMoneyManagement: document.getElementById('tab-money-management'),
+    tabKhataBook: document.getElementById('tab-khata-book'),
+    khataHistoryBody: document.getElementById('khata-history-body'),
+    khataChatPlaceholder: document.getElementById('khata-chat-placeholder'),
+    khataChatActive: document.getElementById('khata-chat-active'),
+    khataActivePersonName: document.getElementById('khata-active-person-name'),
+    khataActivePersonBalance: document.getElementById('khata-active-person-balance'),
+    khataMainForm: document.getElementById('khata-main-form'),
+    khataGlobalForm: document.getElementById('khata-global-form'),
     transactionForm: document.getElementById('transaction-form'),
     transactionBody: document.getElementById('transaction-body'),
     moneySearch: document.getElementById('money-search'),
@@ -687,11 +700,6 @@ const elements = {
     filterCategory: document.getElementById('filter-category'),
     filterType: document.getElementById('filter-type'),
     sortDateBtn: document.getElementById('sort-date-btn'),
-    reportMonthSelector: document.getElementById('report-month-selector'),
-    reportIncome: document.getElementById('report-income'),
-    reportExpense: document.getElementById('report-expense'),
-    reportSavings: document.getElementById('report-savings'),
-    reportTopCategory: document.getElementById('report-top-category'),
     moneyExportBtn: document.getElementById('money-export-btn'),
     moneyImportBtn: document.getElementById('money-import-btn'),
 
@@ -2991,7 +2999,35 @@ function initMoneyTracker() {
     const transDateEl = document.getElementById('trans-date');
     if (transDateEl) transDateEl.value = today;
 
+    // Restore the last active money tab from localStorage
+    const savedMoneyTab = localStorage.getItem('cs_money_tab') || 'money';
+    window.switchMoneyTab(savedMoneyTab);
+
     elements.transactionForm.addEventListener('submit', handleTransactionSubmit);
+    
+    if (elements.khataMainForm) {
+        elements.khataMainForm.addEventListener('submit', handleKhataSubmit);
+        const khataDateEl = document.getElementById('khata-trans-date');
+        if (khataDateEl) khataDateEl.value = today;
+    }
+
+    if (elements.khataGlobalForm) {
+        elements.khataGlobalForm.addEventListener('submit', handleKhataGlobalSubmit);
+        const kgDate = document.getElementById('kg-date');
+        if (kgDate) kgDate.value = today;
+    }
+
+    const transTypeEl = document.getElementById('trans-type');
+    if (transTypeEl) {
+        transTypeEl.addEventListener('change', (e) => {
+            const personFormGroup = document.getElementById('person-form-group');
+            if (e.target.value === 'Lent' || e.target.value === 'Borrowed') {
+                personFormGroup.classList.remove('hidden');
+            } else {
+                personFormGroup.classList.add('hidden');
+            }
+        });
+    }
 
     if (elements.moneySearch) {
         elements.moneySearch.addEventListener('input', () => {
@@ -3027,10 +3063,6 @@ function initMoneyTracker() {
             elements.sortDateBtn.innerHTML = `<i class="fas fa-sort-amount-${appState.moneyTracker.filters.sortOrder === 'desc' ? 'down' : 'up'}"></i>`;
             renderMoneyTracker();
         });
-    }
-
-    if (elements.reportMonthSelector) {
-        elements.reportMonthSelector.addEventListener('change', updateMonthlyReport);
     }
 
     if (elements.moneyExportBtn) {
@@ -3092,10 +3124,14 @@ function initMoneyTracker() {
 
 function handleTransactionSubmit(e) {
     e.preventDefault();
+    const type = document.getElementById('trans-type').value;
+    const person = (type === 'Lent' || type === 'Borrowed') ? document.getElementById('trans-person').value.trim() : '';
+
     const transaction = {
         id: Date.now(),
         date: document.getElementById('trans-date').value,
-        type: document.getElementById('trans-type').value,
+        type: type,
+        person: person,
         amount: parseFloat(document.getElementById('trans-amount').value),
         category: document.getElementById('trans-category').value,
         mode: document.getElementById('trans-mode').value,
@@ -3106,68 +3142,284 @@ function handleTransactionSubmit(e) {
     saveState();
     renderMoneyTracker();
     e.target.reset();
+    document.getElementById('person-form-group')?.classList.add('hidden');
     const transDateEl = document.getElementById('trans-date');
     if (transDateEl) transDateEl.value = new Date().toISOString().split('T')[0];
 }
 
-window.quickAddExpense = (category, amount) => {
+function handleKhataSubmit(e) {
+    e.preventDefault();
+    const type = document.getElementById('khata-trans-type').value;
+    const person = currentKhataPerson;
+
+    if (!person) {
+        alert("Please select a contact first.");
+        return;
+    }
+
     const transaction = {
         id: Date.now(),
-        date: new Date().toISOString().split('T')[0],
-        type: 'Expense',
-        amount: amount,
-        category: category,
-        mode: 'UPI',
-        notes: 'Quick Add'
+        date: document.getElementById('khata-trans-date').value,
+        type: type,
+        person: person,
+        amount: parseFloat(document.getElementById('khata-trans-amount').value),
+        category: 'Other',
+        mode: 'Cash',
+        notes: document.getElementById('khata-trans-notes').value.trim()
     };
+
     appState.moneyTracker.transactions.push(transaction);
     saveState();
     renderMoneyTracker();
-};
+    e.target.reset();
+    
+    const transDateEl = document.getElementById('khata-trans-date');
+    if (transDateEl) transDateEl.value = new Date().toISOString().split('T')[0];
+}
+
+function handleKhataGlobalSubmit(e) {
+    e.preventDefault();
+    const type = document.getElementById('kg-type').value;
+    const person = document.getElementById('kg-person').value.trim();
+    if (!person) return;
+
+    const transaction = {
+        id: Date.now(),
+        date: document.getElementById('kg-date').value,
+        type: type,
+        person: person,
+        amount: parseFloat(document.getElementById('kg-amount').value),
+        category: 'Other',
+        mode: 'Cash',
+        notes: document.getElementById('kg-notes').value.trim()
+    };
+
+    appState.moneyTracker.transactions.push(transaction);
+    saveState();
+    
+    // Auto-select the newly added/updated person
+    currentKhataPerson = person;
+    
+    renderMoneyTracker();
+    e.target.reset();
+    const kgDate = document.getElementById('kg-date');
+    if (kgDate) kgDate.value = new Date().toISOString().split('T')[0];
+}
+
+
 
 function renderMoneyTracker() {
     updateMoneySummary();
     renderTransactionTable();
-    updateMonthlyReport();
+    renderKhataAccounts();
+    window.renderKhataChat();
     updateMoneyCharts();
     updateFilterOptions();
 }
 
+window.switchMoneyTab = (tab) => {
+    if (!elements.viewMoneyManagement) return;
+    // Persist the tab so refresh lands on same tab
+    localStorage.setItem('cs_money_tab', tab);
+    if (tab === 'money') {
+        elements.viewMoneyManagement.classList.remove('hidden');
+        elements.viewKhataManagement.classList.add('hidden');
+        elements.tabMoneyManagement.classList.replace('btn-secondary', 'btn-primary');
+        elements.tabKhataBook.classList.replace('btn-primary', 'btn-secondary');
+    } else {
+        elements.viewMoneyManagement.classList.add('hidden');
+        elements.viewKhataManagement.classList.remove('hidden');
+        elements.tabMoneyManagement.classList.replace('btn-primary', 'btn-secondary');
+        elements.tabKhataBook.classList.replace('btn-secondary', 'btn-primary');
+    }
+};
+
+
+
 function updateMoneySummary() {
     if (!elements.moneyTotalIncome) return;
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
 
     let totalInc = 0;
     let totalExp = 0;
-    let monthInc = 0;
+    let totalLent = 0;
+    let totalBorrowed = 0;
     let monthExp = 0;
 
-    appState.moneyTracker.transactions.forEach(t => {
-        const tDate = new Date(t.date);
-        const amount = parseFloat(t.amount);
+    const now = new Date();
+    const thisMonthKey = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
 
-        if (t.type === 'Income') {
-            totalInc += amount;
-            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                monthInc += amount;
-            }
-        } else {
+    appState.moneyTracker.transactions.forEach(t => {
+        const amount = parseFloat(t.amount) || 0;
+
+        if (t.type === 'Income') totalInc += amount;
+        else if (t.type === 'Expense') {
             totalExp += amount;
-            if (tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear) {
-                monthExp += amount;
-            }
+            // Check if this expense is in the current month
+            if (t.date && t.date.startsWith(thisMonthKey)) monthExp += amount;
         }
+        else if (t.type === 'Lent') totalLent += amount;
+        else if (t.type === 'Borrowed') totalBorrowed += amount;
     });
 
     elements.moneyTotalIncome.textContent = `₹${totalInc.toLocaleString()}`;
     elements.moneyTotalExpense.textContent = `₹${totalExp.toLocaleString()}`;
-    elements.moneyCurrentBalance.textContent = `₹${(totalInc - totalExp).toLocaleString()}`;
-    elements.moneyMonthIncome.textContent = `₹${monthInc.toLocaleString()}`;
-    elements.moneyMonthExpense.textContent = `₹${monthExp.toLocaleString()}`;
-    elements.moneyMonthBalance.textContent = `₹${(monthInc - monthExp).toLocaleString()}`;
+    
+    const walletBalance = totalInc + totalBorrowed - totalExp - totalLent;
+    elements.moneyCurrentBalance.textContent = `₹${walletBalance.toLocaleString()}`;
+    
+    if (elements.moneyTotalLent) elements.moneyTotalLent.textContent = `₹${totalLent.toLocaleString()}`;
+    if (elements.moneyTotalBorrowed) elements.moneyTotalBorrowed.textContent = `₹${totalBorrowed.toLocaleString()}`;
+    
+    const khataBalance = totalBorrowed - totalLent;
+    if (elements.moneyNetKhata) {
+        elements.moneyNetKhata.textContent = `₹${Math.abs(khataBalance).toLocaleString()}`;
+        if (khataBalance > 0) {
+            elements.moneyNetKhata.style.color = 'var(--error)';
+        } else if (khataBalance < 0) {
+            elements.moneyNetKhata.style.color = 'var(--success)';
+        } else {
+            elements.moneyNetKhata.style.color = '';
+        }
+    }
+
+    // This Month's Expense
+    const monthExpEl = document.getElementById('money-month-expense');
+    if (monthExpEl) monthExpEl.textContent = `₹${monthExp.toLocaleString()}`;
+
+    // Pending Contacts (people who haven't settled)
+    const khataContacts = {};
+    appState.moneyTracker.transactions.forEach(t => {
+        if (!t.person || (t.type !== 'Lent' && t.type !== 'Borrowed')) return;
+        if (!khataContacts[t.person]) khataContacts[t.person] = 0;
+        khataContacts[t.person] += t.type === 'Lent' ? -parseFloat(t.amount) : parseFloat(t.amount);
+    });
+    const pendingCount = Object.values(khataContacts).filter(net => net !== 0).length;
+    const pendingEl = document.getElementById('khata-pending-count');
+    if (pendingEl) {
+        pendingEl.textContent = pendingCount;
+        pendingEl.style.color = pendingCount > 0 ? '#8b5cf6' : 'var(--success)';
+    }
 }
+
+function renderKhataAccounts() {
+    if (!elements.khataAccountsList) return;
+
+    const people = {};
+    appState.moneyTracker.transactions.forEach(t => {
+        if (!t.person || (t.type !== 'Lent' && t.type !== 'Borrowed')) return;
+        const pName = t.person.trim();
+        if (!people[pName]) people[pName] = { given: 0, taken: 0 };
+        const amt = parseFloat(t.amount) || 0;
+        if (t.type === 'Lent') people[pName].given += amt;
+        else if (t.type === 'Borrowed') people[pName].taken += amt;
+    });
+
+    const personKeys = Object.keys(people).sort();
+
+    if (personKeys.length === 0) {
+        elements.khataAccountsList.innerHTML = '<div class="empty-state-small text-mute" style="padding:1rem; text-align:center;">No contacts found. Use the form above to add a new entry.</div>';
+        return;
+    }
+
+    elements.khataAccountsList.innerHTML = personKeys.map(pName => {
+        const data = people[pName];
+        const net = data.taken - data.given;
+        let netColorClass = '';
+        if (net > 0) netColorClass = 'text-error';
+        else if (net < 0) netColorClass = 'text-success';
+
+        const isActive = (pName === currentKhataPerson) ? 'active' : '';
+
+        return `
+            <div class="khata-account-row ${isActive}" onclick="selectKhataPerson('${escapeHtml(pName)}')">
+                <div class="khata-avatar">${escapeHtml(pName).charAt(0).toUpperCase()}</div>
+                <div class="khata-details">
+                    <div class="khata-name">${escapeHtml(pName)}</div>
+                    <div class="khata-net ${netColorClass}">
+                        ${net === 0 ? 'Settled up' : (net > 0 ? 'You owe ₹' + Math.abs(net).toLocaleString() : 'Owes you ₹' + Math.abs(net).toLocaleString())}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.selectKhataPerson = (personName) => {
+    currentKhataPerson = personName;
+    // Mobile: slide in chat panel
+    const container = document.querySelector('.khata-chat-container');
+    if (container) container.classList.add('chat-open');
+    renderKhataAccounts();
+    window.renderKhataChat();
+};
+
+window.khataGoBack = () => {
+    // Mobile: slide back to contact list
+    const container = document.querySelector('.khata-chat-container');
+    if (container) container.classList.remove('chat-open');
+};
+
+window.renderKhataChat = () => {
+    if (!elements.khataChatPlaceholder || !elements.khataChatActive) return;
+
+    if (!currentKhataPerson) {
+        elements.khataChatPlaceholder.classList.remove('hidden');
+        elements.khataChatActive.classList.add('hidden');
+        return;
+    }
+
+    elements.khataChatPlaceholder.classList.add('hidden');
+    elements.khataChatActive.classList.remove('hidden');
+
+    const transactions = appState.moneyTracker.transactions.filter(t => 
+        (t.type === 'Lent' || t.type === 'Borrowed') && t.person === currentKhataPerson
+    ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    let totalGiven = 0;
+    let totalTaken = 0;
+
+    const tableRows = transactions.map(t => {
+        const amt = parseFloat(t.amount) || 0;
+        if (t.type === 'Lent') totalGiven += amt;
+        else if (t.type === 'Borrowed') totalTaken += amt;
+
+        const typeColor = t.type === 'Lent' ? 'text-warning' : 'text-monthly';
+        const displayType = t.type === 'Lent' ? 'I Gave' : 'I Got';
+        return `
+            <tr>
+                <td>${escapeHtml(t.date)}</td>
+                <td class="${typeColor}">${displayType}</td>
+                <td>₹${amt.toLocaleString()}</td>
+                <td>${escapeHtml(t.notes || '-')}</td>
+                <td>
+                    <button class="btn-text text-danger" onclick="deleteTransaction(${t.id})" title="Delete"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const net = totalTaken - totalGiven;
+    let netColorClass = '';
+    let netStatus = 'Settled up';
+    if (net > 0) {
+        netColorClass = 'text-error';
+        netStatus = 'You owe them';
+    } else if (net < 0) {
+        netColorClass = 'text-success';
+        netStatus = 'They owe you';
+    }
+
+    elements.khataActivePersonName.textContent = currentKhataPerson;
+    elements.khataActivePersonBalance.innerHTML = `<span class="${netColorClass}">${net === 0 ? 'Settled up' : '₹' + Math.abs(net).toLocaleString() + ' (' + netStatus + ')'}</span>`;
+    
+    // Update header avatar with first letter
+    const headerAvatar = document.getElementById('khata-header-avatar');
+    if (headerAvatar) headerAvatar.textContent = currentKhataPerson.charAt(0).toUpperCase();
+
+    if (elements.khataHistoryBody) {
+        elements.khataHistoryBody.innerHTML = tableRows || '<tr><td colspan="5" class="text-center text-mute" style="padding: 1rem;">No history found. Add an entry above.</td></tr>';
+    }
+};
 
 function renderTransactionTable() {
     if (!elements.transactionBody) return;
@@ -3195,14 +3447,29 @@ function renderTransactionTable() {
     });
 
     elements.transactionBody.innerHTML = filtered.map(t => {
-        const typeEscaped = escapeHtml(t.type);
         const notesEscaped = escapeHtml(t.notes);
         const notesSubstring = escapeHtml(t.notes.substring(0, 15));
+        
+        let typeBadgeClass = 'status-ongoing';
+        if (t.type === 'Income') typeBadgeClass = 'status-completed';
+        else if (t.type === 'Lent') typeBadgeClass = 'status-pending';
+        else if (t.type === 'Borrowed') typeBadgeClass = 'status-cancelled';
+
+        // Use simple English for Khata types
+        const displayType = t.type === 'Lent' ? 'I Gave' : t.type === 'Borrowed' ? 'I Got' : t.type;
+        const personTag = ((t.type === 'Lent' || t.type === 'Borrowed') && t.person) ?
+            ` <small class="text-mute">(${escapeHtml(t.person)})</small>` :
+            '';
+
+        let amountClass = '';
+        if (t.type === 'Income' || t.type === 'Borrowed') amountClass = 'text-success';
+        else amountClass = 'text-danger';
+
         return `
             <tr>
                 <td>${escapeHtml(t.date)}</td>
-                <td><span class="status-badge ${t.type === 'Income' ? 'status-completed' : 'status-ongoing'}">${typeEscaped}</span></td>
-                <td class="${t.type === 'Income' ? 'text-success' : 'text-danger'}">₹${parseFloat(t.amount).toLocaleString()}</td>
+                <td><span class="status-badge ${typeBadgeClass}">${displayType}</span>${personTag}</td>
+                <td class="${amountClass}">₹${parseFloat(t.amount).toLocaleString()}</td>
                 <td>${escapeHtml(t.category)}</td>
                 <td>${escapeHtml(t.mode)}</td>
                 <td title="${notesEscaped}">${notesSubstring}${t.notes.length > 15 ? '...' : ''}</td>
@@ -3237,7 +3504,13 @@ window.editTransaction = (id) => {
                 <select id="edit-trans-type" required>
                     <option value="Expense" ${t.type === 'Expense' ? 'selected' : ''}>Expense</option>
                     <option value="Income" ${t.type === 'Income' ? 'selected' : ''}>Income</option>
+                    <option value="Lent" ${t.type === 'Lent' ? 'selected' : ''}>Lent (Gave)</option>
+                    <option value="Borrowed" ${t.type === 'Borrowed' ? 'selected' : ''}>Borrowed (Took)</option>
                 </select>
+            </div>
+            <div class="form-group ${(t.type === 'Lent' || t.type === 'Borrowed') ? '' : 'hidden'}" id="edit-person-form-group">
+                <label>Person Name</label>
+                <input type="text" id="edit-trans-person" value="${escapeHtml(t.person || '')}" placeholder="Enter person name">
             </div>
             <div class="form-group">
                 <label>Amount (₹)</label>
@@ -3274,10 +3547,20 @@ window.editTransaction = (id) => {
         </form>
     `);
 
+    document.getElementById('edit-trans-type').addEventListener('change', (e) => {
+        const pGroup = document.getElementById('edit-person-form-group');
+        if (e.target.value === 'Lent' || e.target.value === 'Borrowed') {
+            pGroup.classList.remove('hidden');
+        } else {
+            pGroup.classList.add('hidden');
+        }
+    });
+
     document.getElementById('edit-transaction-form').addEventListener('submit', (e) => {
         e.preventDefault();
         t.date = document.getElementById('edit-trans-date').value.trim();
         t.type = document.getElementById('edit-trans-type').value.trim();
+        t.person = (t.type === 'Lent' || t.type === 'Borrowed') ? document.getElementById('edit-trans-person').value.trim() : '';
         t.amount = parseFloat(document.getElementById('edit-trans-amount').value) || 0;
         t.category = document.getElementById('edit-trans-category').value.trim();
         t.mode = document.getElementById('edit-trans-mode').value.trim();
@@ -3289,7 +3572,7 @@ window.editTransaction = (id) => {
 };
 
 function updateFilterOptions() {
-    if (!elements.filterMonth || !elements.reportMonthSelector) return;
+    if (!elements.filterMonth) return;
 
     let months = [];
     if (appState.moneyTracker.transactions && appState.moneyTracker.transactions.length > 0) {
@@ -3303,57 +3586,9 @@ function updateFilterOptions() {
     elements.filterMonth.innerHTML = '<option value="all">All Months</option>' +
         months.map(m => `<option value="${m}">${new Date(m + '-01').toLocaleString('default', { month: 'short', year: 'numeric' })}</option>`).join('');
     elements.filterMonth.value = currentFilterMonth || 'all';
-
-    const currentReportMonth = elements.reportMonthSelector.value;
-    elements.reportMonthSelector.innerHTML = months.length > 0 ?
-        months.map(m => `<option value="${m}">${new Date(m + '-01').toLocaleString('default', { month: 'short', year: 'numeric' })}</option>`).join('') :
-        '<option value="">No Data</option>';
-    if (!currentReportMonth && months.length > 0) {
-        elements.reportMonthSelector.value = months[0];
-    } else if (months.length === 0) {
-        elements.reportMonthSelector.value = '';
-    } else {
-        elements.reportMonthSelector.value = currentReportMonth;
-    }
 }
 
-function updateMonthlyReport() {
-    if (!elements.reportMonthSelector) return;
-    const selectedMonth = elements.reportMonthSelector.value;
-    if (!selectedMonth) return;
 
-    const filtered = appState.moneyTracker.transactions.filter(t => {
-        const d = new Date(t.date);
-        const m = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-        return m === selectedMonth;
-    });
-
-    let inc = 0, exp = 0;
-    const catMap = {};
-
-    filtered.forEach(t => {
-        const amt = parseFloat(t.amount);
-        if (t.type === 'Income') inc += amt;
-        else {
-            exp += amt;
-            catMap[t.category] = (catMap[t.category] || 0) + amt;
-        }
-    });
-
-    let topCat = '-';
-    let maxExp = 0;
-    for (const cat in catMap) {
-        if (catMap[cat] > maxExp) {
-            maxExp = catMap[cat];
-            topCat = cat;
-        }
-    }
-
-    if (elements.reportIncome) elements.reportIncome.textContent = `₹${inc.toLocaleString()}`;
-    if (elements.reportExpense) elements.reportExpense.textContent = `₹${exp.toLocaleString()}`;
-    if (elements.reportSavings) elements.reportSavings.textContent = `₹${(inc - exp).toLocaleString()}`;
-    if (elements.reportTopCategory) elements.reportTopCategory.textContent = topCat;
-}
 
 const categoryColors = {
     'Mess': '#0088CC', // Jarvis Blue
@@ -3388,7 +3623,15 @@ function initMoneyCharts() {
 
     spendingBarChart = new Chart(barCtx, {
         type: 'bar',
-        data: { labels: [], datasets: [{ label: 'Expense', data: [], backgroundColor: '#525252' }, { label: 'Income', data: [], backgroundColor: '#0088CC' }] },
+        data: { 
+            labels: [], 
+            datasets: [
+                { label: 'Expense', data: [], backgroundColor: '#525252' }, 
+                { label: 'Income', data: [], backgroundColor: '#0088CC' },
+                { label: 'Lent', data: [], backgroundColor: '#f97316' },
+                { label: 'Borrowed', data: [], backgroundColor: '#ec4899' }
+            ] 
+        },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor, boxWidth: 12 } } }, scales: { y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: tickColor } }, x: { grid: { display: false }, ticks: { color: tickColor } } } }
     });
 }
@@ -3426,6 +3669,18 @@ function updateMoneyCharts() {
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
     });
 
+    const lentData = months.map(m => {
+        return appState.moneyTracker.transactions
+            .filter(t => t.type === 'Lent' && t.date.startsWith(m))
+            .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    });
+
+    const borrowedData = months.map(m => {
+        return appState.moneyTracker.transactions
+            .filter(t => t.type === 'Borrowed' && t.date.startsWith(m))
+            .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    });
+
     spendingBarChart.data.labels = months.map(m => {
         const parts = m.split('-');
         const year = parseInt(parts[0], 10);
@@ -3434,6 +3689,8 @@ function updateMoneyCharts() {
     });
     spendingBarChart.data.datasets[0].data = expData;
     spendingBarChart.data.datasets[1].data = incData;
+    spendingBarChart.data.datasets[2].data = lentData;
+    spendingBarChart.data.datasets[3].data = borrowedData;
     spendingBarChart.update();
 }
 

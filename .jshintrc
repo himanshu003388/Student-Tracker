@@ -1,0 +1,13 @@
+{
+  "esversion": 11,
+  "browser": true,
+  "devel": true,
+  "undef": true,
+  "unused": true,
+  "globals": {
+    "gapi": false,
+    "google": false,
+    "Chart": false,
+    "jsPDF": false
+  }
+}

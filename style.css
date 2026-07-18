@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --ink: #171717;
   --body: #404040;
   --mute: #737373;
@@ -643,6 +643,16 @@ td {
 .dark-mode .status-completed {
   background: #064e3b;
   color: #6ee7b7;
+}
+
+.status-pending {
+  background: var(--orange-bg);
+  color: var(--orange-color);
+}
+
+.status-cancelled {
+  background: var(--monthly-bg);
+  color: var(--monthly-color);
 }
 
 .progress-container {
@@ -1539,33 +1549,6 @@ td {
 
 
 
-.quick-add-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.quick-add-btn {
-  background: var(--canvas-soft);
-  border: 1px solid var(--hairline);
-  color: var(--body);
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 0.8125rem;
-  font-family: var(--font-sans);
-  transition: all 0.2s ease;
-}
-
-.quick-add-btn:hover {
-  background: var(--link);
-  color: white;
-  border-color: var(--link);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-elevated);
-}
 
 .money-main-layout {
   display: grid;
@@ -3843,4 +3826,328 @@ td {
 
 .exam-delete-btn:hover {
   color: var(--error);
+}
+
+/* ========================================
+   Khata Book - Telegram-Style Sidebar
+======================================== */
+
+.khata-accounts-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+}
+
+.khata-account-row {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  margin: 0.15rem 0.5rem;
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
+  border: 2px solid transparent;
+  background: transparent;
+  position: relative;
+}
+
+.khata-account-row:hover {
+  background: var(--canvas-soft);
+}
+
+.khata-account-row.active {
+  background: var(--link-bg-soft);
+  border-color: var(--link);
+  box-shadow: 0 0 0 2px var(--link-glow);
+}
+
+.khata-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--link-bg-soft);
+  color: var(--link);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-right: 0.875rem;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+.khata-account-row.active .khata-avatar {
+  border-color: var(--link);
+  background: var(--link);
+  color: #fff;
+}
+
+.khata-details {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.khata-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.khata-account-row.active .khata-name {
+  color: var(--link);
+}
+
+.khata-net {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--mute);
+}
+
+.khata-account-row.active .khata-net {
+  color: var(--link) !important;
+  opacity: 0.85;
+}
+
+/* ============================================
+   Khata Book - Telegram Mobile Responsive
+============================================ */
+
+.khata-chat-container {
+  display: flex;
+  height: 620px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.khata-chat-sidebar {
+  width: 300px;
+  min-width: 300px;
+  border-right: 1px solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  z-index: 2;
+}
+
+.khata-sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--canvas-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.khata-sidebar-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.khata-chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+.khata-chat-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--mute);
+}
+
+.khata-chat-header {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--canvas-soft);
+  min-height: 64px;
+}
+
+.khata-back-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--link);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.khata-back-btn:hover {
+  background: var(--link-bg-soft);
+}
+
+.khata-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.khata-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--link);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.khata-chat-input-area {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--card-bg);
+}
+
+.khata-chat-history {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* ============================================
+   MOBILE: <= 768px â€” Full-screen panel switch
+============================================ */
+@media (max-width: 768px) {
+  /* Fixed height so child height:100% resolves correctly */
+  .khata-chat-container {
+    height: 75vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Sidebar takes full width, positioned absolutely */
+  .khata-chat-sidebar {
+    width: 100%;
+    min-width: 100%;
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+    z-index: 2;
+  }
+
+  /* Slide sidebar out when chat is open */
+  .khata-chat-container.chat-open .khata-chat-sidebar {
+    transform: translateX(-100%);
+    pointer-events: none;
+  }
+
+  /* Right panel â€” off screen to the right by default */
+  .khata-chat-main {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    z-index: 3;
+  }
+
+  /* Slide right panel in when chat is open */
+  .khata-chat-container.chat-open .khata-chat-main {
+    transform: translateX(0);
+  }
+
+  /* Active chat view must fill the main panel */
+  #khata-chat-active {
+    flex: 1;
+    display: flex !important;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  #khata-chat-active.hidden {
+    display: none !important;
+  }
+
+  /* Show back button on mobile */
+  .khata-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Chat history scrollable area */
+  .khata-chat-history {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Input form stacks vertically on mobile */
+  #khata-main-form {
+    flex-direction: column !important;
+  }
+
+  #khata-main-form .form-group {
+    min-width: 100% !important;
+    flex: unset !important;
+  }
+
+  #khata-main-form button[type="submit"] {
+    width: 100%;
+    height: 40px !important;
+  }
+
+  /* Smaller table text */
+  .khata-chat-history th,
+  .khata-chat-history td {
+    font-size: 0.8rem;
+    padding: 0.6rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .khata-chat-container {
+    height: 80vh;
+  }
+
+  .khata-accounts-list {
+    padding: 0.25rem 0;
+  }
+
+  .khata-account-row {
+    padding: 0.875rem 0.875rem;
+    margin: 0.1rem 0.25rem;
+    border-radius: 10px;
+  }
+
+  .khata-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+    margin-right: 0.75rem;
+  }
 }

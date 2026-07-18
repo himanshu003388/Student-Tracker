@@ -361,8 +361,12 @@
 
         <!-- Money Tracker Section -->
         <section id="money" class="hidden">
-            <div class="section-header">
+            <div class="section-header" style="flex-wrap: wrap; gap: 1rem;">
                 <h2>💰 Money Tracker</h2>
+                <div class="money-tabs" style="display: flex; gap: 0.5rem;">
+                    <button class="btn-primary" id="tab-money-management" onclick="switchMoneyTab('money')">Money Management</button>
+                    <button class="btn-secondary" id="tab-khata-book" onclick="switchMoneyTab('khata')">Khata Book</button>
+                </div>
                 <div class="header-actions">
                     <button id="money-export-btn" class="btn-text" title="Export Transactions"><i
                             class="fas fa-file-export"></i></button>
@@ -371,193 +375,296 @@
                 </div>
             </div>
 
-            <div class="money-summary-grid">
-                <div class="money-stat-card card income">
-                    <i class="fas fa-arrow-up"></i>
-                    <div class="stat-info">
-                        <span class="stat-label">Total Income</span>
-                        <span class="stat-value" id="money-total-income">₹0</span>
+            <div id="view-money-management">
+                <div class="money-summary-grid">
+                    <div class="money-stat-card card income">
+                        <i class="fas fa-arrow-up"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Income</span>
+                            <span class="stat-value" id="money-total-income">₹0</span>
+                        </div>
+                    </div>
+                    <div class="money-stat-card card expense">
+                        <i class="fas fa-arrow-down"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Expense</span>
+                            <span class="stat-value" id="money-total-expense">₹0</span>
+                        </div>
+                    </div>
+                    <div class="money-stat-card card balance">
+                        <i class="fas fa-wallet"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Current Balance</span>
+                            <span class="stat-value" id="money-current-balance">₹0</span>
+                        </div>
+                    </div>
+                    <div class="money-stat-card card" style="border-left: 3px solid var(--orange-color);">
+                        <i class="fas fa-calendar-day" style="color: var(--orange-color);"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">This Month's Expense</span>
+                            <span class="stat-value" id="money-month-expense">₹0</span>
+                        </div>
                     </div>
                 </div>
-                <div class="money-stat-card card expense">
-                    <i class="fas fa-arrow-down"></i>
-                    <div class="stat-info">
-                        <span class="stat-label">Total Expense</span>
-                        <span class="stat-value" id="money-total-expense">₹0</span>
+
+                <div class="money-main-layout mt-20">
+                    <div class="money-forms-column">
+                        <div class="add-transaction-card card">
+                            <h3><i class="fas fa-plus-circle"></i> Add Transaction</h3>
+                            <form id="transaction-form">
+                                <div class="form-group">
+                                    <label for="trans-date">Date</label>
+                                    <input type="date" id="trans-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="trans-type">Type</label>
+                                    <select id="trans-type" required>
+                                        <option value="Expense">Expense</option>
+                                        <option value="Income">Income</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="trans-amount">Amount (₹)</label>
+                                    <input type="number" id="trans-amount" min="1" required placeholder="Enter amount">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trans-category">Category</label>
+                                    <select id="trans-category" required>
+                                        <option value="Mess">Mess</option>
+                                        <option value="Diet">Diet (milk, fruits, eggs)</option>
+                                        <option value="Protein supplements">Protein supplements</option>
+                                        <option value="Gym">Gym</option>
+                                        <option value="Snacks">Snacks</option>
+                                        <option value="Travel">Travel</option>
+                                        <option value="Hostel Fees">Hostel Fees</option>
+                                        <option value="Medical">Medical</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="trans-mode">Payment Mode</label>
+                                    <select id="trans-mode" required>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Bank">Bank</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="trans-notes">Notes (Optional)</label>
+                                    <textarea id="trans-notes" rows="2" placeholder="Short note..."></textarea>
+                                </div>
+                                <button type="submit" class="btn-primary block">Add Transaction</button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-                <div class="money-stat-card card balance">
-                    <i class="fas fa-wallet"></i>
-                    <div class="stat-info">
-                        <span class="stat-label">Current Balance</span>
-                        <span class="stat-value" id="money-current-balance">₹0</span>
-                    </div>
-                </div>
-                <div class="money-stat-card card month-expense">
-                    <i class="fas fa-calendar-minus"></i>
-                    <div class="stat-info">
-                        <span class="stat-label">This Month Exp</span>
-                        <span class="stat-value" id="money-month-expense">₹0</span>
-                    </div>
-                </div>
-                <div class="money-stat-card card month-income">
-                    <i class="fas fa-calendar-plus"></i>
-                    <div class="stat-info">
-                        <span class="stat-label">This Month Inc</span>
-                        <span class="stat-value" id="money-month-income">₹0</span>
-                    </div>
-                </div>
-                <div class="money-stat-card card month-balance">
-                    <i class="fas fa-piggy-bank"></i>
-                    <div class="stat-info">
-                        <span class="stat-label">This Month Bal</span>
-                        <span class="stat-value" id="money-month-balance">₹0</span>
+
+                    <div class="money-history-column">
+                        <div class="history-card card">
+                            <div class="section-header">
+                                <h3><i class="fas fa-history"></i> Transaction History</h3>
+                                <div class="history-filters">
+                                    <input type="text" id="money-search" placeholder="Search notes..." class="search-input">
+                                    <select id="filter-month" class="filter-select">
+                                        <option value="all">All Months</option>
+                                    </select>
+                                    <select id="filter-category" class="filter-select">
+                                        <option value="all">All Categories</option>
+                                        <option value="Mess">Mess</option>
+                                        <option value="Diet">Diet</option>
+                                        <option value="Protein supplements">Protein</option>
+                                        <option value="Gym">Gym</option>
+                                        <option value="Snacks">Snacks</option>
+                                        <option value="Travel">Travel</option>
+                                        <option value="Hostel Fees">Hostel Fees</option>
+                                        <option value="Medical">Medical</option>
+                                        <option value="Stationery">Stationery</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    <select id="filter-type" class="filter-select">
+                                        <option value="all">All Types</option>
+                                        <option value="Income">Income</option>
+                                        <option value="Expense">Expense</option>
+                                        <option value="Lent">I Gave (Khata)</option>
+                                        <option value="Borrowed">I Got (Khata)</option>
+                                    </select>
+                                    <button id="sort-date-btn" class="btn-icon" title="Sort by Date"><i
+                                            class="fas fa-sort-amount-down"></i></button>
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                            <th>Category</th>
+                                            <th>Mode</th>
+                                            <th>Notes</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="transaction-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="money-charts-grid mt-20">
+                            <div class="chart-card card">
+                                <h3>Category-wise Expense</h3>
+                                <div class="chart-container">
+                                    <canvas id="expense-pie-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card card">
+                                <h3>Monthly Spending (Last 6 Months)</h3>
+                                <div class="chart-container">
+                                    <canvas id="spending-bar-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="quick-add-section card mt-20">
-                <h3><i class="fas fa-bolt"></i> Quick Add Expenses</h3>
-                <div class="quick-add-btns">
-                    <button class="quick-add-btn" onclick="quickAddExpense('Mess', 120)">Mess ₹120</button>
-                    <button class="quick-add-btn" onclick="quickAddExpense('Snacks', 50)">Snacks ₹50</button>
-                    <button class="quick-add-btn" onclick="quickAddExpense('Diet', 40)">Milk ₹40</button>
-                    <button class="quick-add-btn" onclick="quickAddExpense('Diet', 60)">Eggs ₹60</button>
-                    <button class="quick-add-btn" onclick="quickAddExpense('Protein supplements', 250)">Protein
-                        ₹250</button>
-                    <button class="quick-add-btn" onclick="quickAddExpense('Travel', 100)">Travel ₹100</button>
-                </div>
-            </div>
-
-            <div class="money-main-layout mt-20">
-                <div class="money-forms-column">
-                    <div class="add-transaction-card card">
-                        <h3><i class="fas fa-plus-circle"></i> Add Transaction</h3>
-                        <form id="transaction-form">
-                            <div class="form-group">
-                                <label for="trans-date">Date</label>
-                                <input type="date" id="trans-date" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="trans-type">Type</label>
-                                <select id="trans-type" required>
-                                    <option value="Expense">Expense</option>
-                                    <option value="Income">Income</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="trans-amount">Amount (₹)</label>
-                                <input type="number" id="trans-amount" min="1" required placeholder="Enter amount">
-                            </div>
-                            <div class="form-group">
-                                <label for="trans-category">Category</label>
-                                <select id="trans-category" required>
-                                    <option value="Mess">Mess</option>
-                                    <option value="Diet">Diet (milk, fruits, eggs)</option>
-                                    <option value="Protein supplements">Protein supplements</option>
-                                    <option value="Gym">Gym</option>
-                                    <option value="Snacks">Snacks</option>
-                                    <option value="Travel">Travel</option>
-                                    <option value="Hostel Fees">Hostel Fees</option>
-                                    <option value="Medical">Medical</option>
-                                    <option value="Stationery">Stationery</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="trans-mode">Payment Mode</label>
-                                <select id="trans-mode" required>
-                                    <option value="UPI">UPI</option>
-                                    <option value="Cash">Cash</option>
-                                    <option value="Bank">Bank</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="trans-notes">Notes (Optional)</label>
-                                <textarea id="trans-notes" rows="2" placeholder="Short note..."></textarea>
-                            </div>
-                            <button type="submit" class="btn-primary block">Add Transaction</button>
-                        </form>
-                    </div>
-
-                    <div class="monthly-report-card card mt-20">
-                        <div class="section-header">
-                            <h3><i class="fas fa-file-invoice-dollar"></i> Monthly Report</h3>
-                            <select id="report-month-selector" class="small-select"></select>
+            <div id="view-khata-management" class="hidden">
+                <div class="money-summary-grid">
+                    <div class="money-stat-card card month-expense">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Lent</span>
+                            <span class="stat-value" id="money-total-lent">₹0</span>
                         </div>
-                        <div class="report-stats">
-                            <div class="report-item"><span>Total Income:</span> <strong id="report-income">₹0</strong>
-                            </div>
-                            <div class="report-item"><span>Total Expense:</span> <strong id="report-expense"
-                                    class="text-danger">₹0</strong></div>
-                            <div class="report-item"><span>Net Savings:</span> <strong id="report-savings"
-                                    class="text-success">₹0</strong></div>
-                            <div class="report-item"><span>Top Category:</span> <strong
-                                    id="report-top-category">-</strong></div>
+                    </div>
+                    <div class="money-stat-card card month-income">
+                        <i class="fas fa-hand-holding"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Borrowed</span>
+                            <span class="stat-value" id="money-total-borrowed">₹0</span>
+                        </div>
+                    </div>
+                    <div class="money-stat-card card month-balance">
+                        <i class="fas fa-scale-balanced"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Khata Balance</span>
+                            <span class="stat-value" id="money-net-khata">₹0</span>
+                        </div>
+                    </div>
+                    <div class="money-stat-card card" style="border-left: 3px solid #8b5cf6;">
+                        <i class="fas fa-user-clock" style="color: #8b5cf6;"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Pending Contacts</span>
+                            <span class="stat-value" id="khata-pending-count">0</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="money-history-column">
-                    <div class="history-card card">
-                        <div class="section-header">
-                            <h3><i class="fas fa-history"></i> Transaction History</h3>
-                            <div class="history-filters">
-                                <input type="text" id="money-search" placeholder="Search notes..." class="search-input">
-                                <select id="filter-month" class="filter-select">
-                                    <option value="all">All Months</option>
-                                </select>
-                                <select id="filter-category" class="filter-select">
-                                    <option value="all">All Categories</option>
-                                    <option value="Mess">Mess</option>
-                                    <option value="Diet">Diet</option>
-                                    <option value="Protein supplements">Protein</option>
-                                    <option value="Gym">Gym</option>
-                                    <option value="Snacks">Snacks</option>
-                                    <option value="Travel">Travel</option>
-                                    <option value="Hostel Fees">Hostel Fees</option>
-                                    <option value="Medical">Medical</option>
-                                    <option value="Stationery">Stationery</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                                <select id="filter-type" class="filter-select">
-                                    <option value="all">All Types</option>
-                                    <option value="Income">Income</option>
-                                    <option value="Expense">Expense</option>
-                                </select>
-                                <button id="sort-date-btn" class="btn-icon" title="Sort by Date"><i
-                                        class="fas fa-sort-amount-down"></i></button>
-                            </div>
+                <div class="card mt-20" style="padding: 1rem;">
+                    <form id="khata-global-form" style="display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;">
+                        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                            <label for="kg-date" style="font-size: 0.75rem;">Date</label>
+                            <input type="date" id="kg-date" required style="padding: 0.4rem; font-size: 0.875rem;">
                         </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Type</th>
-                                        <th>Amount</th>
-                                        <th>Category</th>
-                                        <th>Mode</th>
-                                        <th>Notes</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="transaction-body"></tbody>
-                            </table>
+                        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 100px;">
+                            <label for="kg-type" style="font-size: 0.75rem;">Type</label>
+                            <select id="kg-type" required style="padding: 0.4rem; font-size: 0.875rem;">
+                                <option value="Lent">Lent</option>
+                                <option value="Borrowed">Borrowed</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; flex: 1.5; min-width: 120px;">
+                            <label for="kg-person" style="font-size: 0.75rem;">Person Name</label>
+                            <input type="text" id="kg-person" required placeholder="Person Name" style="padding: 0.4rem; font-size: 0.875rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 100px;">
+                            <label for="kg-amount" style="font-size: 0.75rem;">Amount (₹)</label>
+                            <input type="number" id="kg-amount" min="1" required placeholder="Amount" style="padding: 0.4rem; font-size: 0.875rem;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0; flex: 2; min-width: 150px;">
+                            <label for="kg-notes" style="font-size: 0.75rem;">Notes</label>
+                            <input type="text" id="kg-notes" placeholder="Short note..." style="padding: 0.4rem; font-size: 0.875rem;">
+                        </div>
+                        <button type="submit" class="btn-primary" style="padding: 0.4rem 1rem; height: 35px; font-size: 0.875rem;"><i class="fas fa-plus"></i> Add Entry</button>
+                    </form>
+                </div>
+
+                <div class="khata-chat-container mt-20 card">
+                    <!-- Left Sidebar -->
+                    <div class="khata-chat-sidebar" id="khata-chat-sidebar">
+                        <div class="khata-sidebar-header">
+                            <h3><i class="fas fa-users"></i> Contacts</h3>
+                        </div>
+                        <div id="khata-accounts-list" class="khata-accounts-list">
+                            <!-- JS populated list -->
                         </div>
                     </div>
 
-                    <div class="money-charts-grid mt-20">
-                        <div class="chart-card card">
-                            <h3>Category-wise Expense</h3>
-                            <div class="chart-container">
-                                <canvas id="expense-pie-chart"></canvas>
-                            </div>
+                    <!-- Right Main Panel -->
+                    <div class="khata-chat-main" id="khata-chat-main">
+                        <!-- Placeholder when no person is selected -->
+                        <div id="khata-chat-placeholder" class="khata-chat-placeholder">
+                            <i class="fas fa-comments" style="font-size: 4rem; margin-bottom: 1rem; opacity: 0.2;"></i>
+                            <p>Select a contact to view their ledger</p>
                         </div>
-                        <div class="chart-card card">
-                            <h3>Monthly Spending (Last 6 Months)</h3>
-                            <div class="chart-container">
-                                <canvas id="spending-bar-chart"></canvas>
+                        
+                        <!-- Active Chat View -->
+                        <div id="khata-chat-active" class="hidden" style="flex: 1; display: flex; flex-direction: column;">
+                            <!-- Header -->
+                            <div class="khata-chat-header">
+                                <!-- Back button: mobile only -->
+                                <button id="khata-back-btn" class="khata-back-btn" onclick="khataGoBack()">
+                                    <i class="fas fa-arrow-left"></i>
+                                </button>
+                                <div class="khata-header-info">
+                                    <div class="khata-header-avatar" id="khata-header-avatar">?</div>
+                                    <div>
+                                        <h3 id="khata-active-person-name" style="margin: 0;">Person Name</h3>
+                                        <span id="khata-active-person-balance" style="font-size: 0.85rem;">Net Balance: ₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Inline Form Data Input -->
+                            <div class="khata-chat-input-area" style="padding: 1rem; border-bottom: 1px solid var(--hairline); background: var(--card-bg);">
+                                <form id="khata-main-form" style="display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;">
+                                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                        <label for="khata-trans-date" style="font-size: 0.75rem;">Date</label>
+                                        <input type="date" id="khata-trans-date" required style="padding: 0.4rem; font-size: 0.875rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                        <label for="khata-trans-type" style="font-size: 0.75rem;">Type</label>
+                                        <select id="khata-trans-type" required style="padding: 0.4rem; font-size: 0.875rem;">
+                                            <option value="Lent">Lent (Gave)</option>
+                                            <option value="Borrowed">Borrowed (Took)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                        <label for="khata-trans-amount" style="font-size: 0.75rem;">Amount (₹)</label>
+                                        <input type="number" id="khata-trans-amount" min="1" required placeholder="Amount" style="padding: 0.4rem; font-size: 0.875rem;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0; flex: 2; min-width: 150px;">
+                                        <label for="khata-trans-notes" style="font-size: 0.75rem;">Notes</label>
+                                        <input type="text" id="khata-trans-notes" placeholder="Short note..." style="padding: 0.4rem; font-size: 0.875rem;">
+                                    </div>
+                                    <button type="submit" class="btn-primary" style="padding: 0.4rem 1rem; height: 35px; font-size: 0.875rem;"><i class="fas fa-paper-plane"></i> Send</button>
+                                </form>
+                            </div>
+                            
+                            <!-- History List / Table -->
+                            <div class="khata-chat-history" style="flex: 1; overflow-y: auto; padding: 1rem;">
+                                <table class="khata-modal-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="text-align: left; border-bottom: 1px solid var(--hairline);">
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Amount</th>
+                                            <th>Notes</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="khata-history-body"></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
