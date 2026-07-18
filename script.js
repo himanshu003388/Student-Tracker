@@ -237,6 +237,12 @@ async function getOrCreateUploadFolder() {
         });
         if (!res.ok) {
             const err = await res.text();
+            if (res.status === 401 || res.status === 403 || err.includes('insufficientScopes')) {
+                localStorage.removeItem('google_access_token');
+                alert("Google Drive requires updated permissions for file uploads. The page will now reload so you can sign in again.");
+                location.reload();
+                throw new Error("Reloading for new permissions...");
+            }
             throw new Error('Failed to search folder: ' + err);
         }
         const data = await res.json();
@@ -259,6 +265,12 @@ async function getOrCreateUploadFolder() {
         });
         if (!createRes.ok) {
             const err = await createRes.text();
+            if (createRes.status === 401 || createRes.status === 403 || err.includes('insufficientScopes')) {
+                localStorage.removeItem('google_access_token');
+                alert("Google Drive requires updated permissions for file uploads. The page will now reload so you can sign in again.");
+                location.reload();
+                throw new Error("Reloading for new permissions...");
+            }
             throw new Error('Failed to create folder: ' + err);
         }
         const createData = await createRes.json();
