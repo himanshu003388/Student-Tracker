@@ -791,42 +791,55 @@ if (elements.themeToggle) {
     });
 }
 
+window.navigateToSection = (target, skipHistory = false) => {
+    localStorage.setItem('cs_active_section', target);
+
+    elements.navLinks.forEach(l => {
+        if (l.getAttribute('data-section') === target) {
+            l.classList.add('active');
+        } else {
+            l.classList.remove('active');
+        }
+    });
+
+    elements.sections.forEach(section => {
+        if (section.id === target) {
+            section.classList.remove('hidden');
+            section.classList.add('active-section');
+        } else {
+            section.classList.add('hidden');
+            section.classList.remove('active-section');
+        }
+    });
+
+    setTimeout(() => {
+        if (target === 'money') {
+            if (typeof expensePieChart !== 'undefined' && expensePieChart) expensePieChart.resize();
+            if (typeof spendingBarChart !== 'undefined' && spendingBarChart) spendingBarChart.resize();
+        }
+    }, 10);
+
+    const navLinksContainer = document.querySelector('.nav-links');
+    const mobileBtn = document.querySelector('.mobile-menu-btn');
+    if (window.innerWidth <= 768 && navLinksContainer.classList.contains('mobile-open')) {
+        navLinksContainer.classList.remove('mobile-open');
+        if (mobileBtn) {
+            mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            mobileBtn.classList.remove('open');
+        }
+    }
+    
+    if (!skipHistory) {
+        history.pushState({ sectionId: target }, "", "");
+    }
+};
+
 function initNavigation() {
     elements.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const target = link.getAttribute('data-section');
-            localStorage.setItem('cs_active_section', target);
-
-            elements.navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
-
-            elements.sections.forEach(section => {
-                if (section.id === target) {
-                    section.classList.remove('hidden');
-                    section.classList.add('active-section');
-                } else {
-                    section.classList.add('hidden');
-                    section.classList.remove('active-section');
-                }
-            });
-
-            setTimeout(() => {
-                if (target === 'money') {
-                    if (typeof expensePieChart !== 'undefined' && expensePieChart) expensePieChart.resize();
-                    if (typeof spendingBarChart !== 'undefined' && spendingBarChart) spendingBarChart.resize();
-                }
-            }, 10);
-
-            const navLinksContainer = document.querySelector('.nav-links');
-            const mobileBtn = document.querySelector('.mobile-menu-btn');
-            if (window.innerWidth <= 768 && navLinksContainer.classList.contains('mobile-open')) {
-                navLinksContainer.classList.remove('mobile-open');
-                if (mobileBtn) {
-                    mobileBtn.innerHTML = '<i class="fas fa-bars"></i>';
-                    mobileBtn.classList.remove('open');
-                }
-            }
+            window.navigateToSection(target);
         });
     });
 
@@ -834,19 +847,14 @@ function initNavigation() {
     if (logoLink) {
         logoLink.addEventListener('click', (e) => {
             e.preventDefault();
-            const dashboardLink = document.querySelector('.nav-links a[data-section="dashboard"]');
-            if (dashboardLink) {
-                dashboardLink.click();
-            }
+            window.navigateToSection('dashboard');
         });
     }
 
     // Restore active tab
     const activeSection = localStorage.getItem('cs_active_section') || 'dashboard';
-    const activeLink = document.querySelector(`.nav-links a[data-section="${activeSection}"]`);
-    if (activeLink) {
-        activeLink.click();
-    }
+    window.navigateToSection(activeSection, true);
+    history.replaceState({ sectionId: activeSection }, "", "");
 }
 const MOTIVATIONAL_QUOTES = [
     "Believe you can and you're halfway there.",
@@ -2575,10 +2583,21 @@ window.navigateToFolder = (folderId, skipHistory = false) => {
 };
 
 window.addEventListener('popstate', (e) => {
-    if (e.state && e.state.folderId) {
-        window.navigateToFolder(e.state.folderId, true);
-    } else if (currentFolderId !== 'root') {
-        window.navigateToFolder('root', true);
+    if (e.state) {
+        if (e.state.folderId) {
+            window.navigateToFolder(e.state.folderId, true);
+        } else if (e.state.sectionId) {
+            if (currentFolderId !== 'root') {
+                window.navigateToFolder('root', true);
+            }
+            window.navigateToSection(e.state.sectionId, true);
+        }
+    } else {
+        if (currentFolderId !== 'root') {
+            window.navigateToFolder('root', true);
+        } else {
+            window.navigateToSection('dashboard', true);
+        }
     }
 });
 
