@@ -215,9 +215,11 @@
                     <div class="section-header">
                         <h2><i class="fas fa-sticky-note"></i> Notes & Snippets</h2>
                         <input type="text" id="note-search" placeholder="Search notes..." class="search-input">
-                        <label for="global-add-files" class="btn-primary small" style="background-color: #3b82f6; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;"><i class="fas fa-file-upload"></i> Add Files</label>
-                        <input type="file" id="global-add-files" multiple accept=".pdf,image/*" style="display: none;">
-                        <button id="add-note-btn" class="btn-primary small"><i class="fas fa-plus"></i> New Note</button>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <label for="global-add-files" class="btn-primary small" style="background-color: #3b82f6; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; margin: 0;"><i class="fas fa-file-upload"></i> Add Files</label>
+                            <input type="file" id="global-add-files" multiple accept=".pdf,image/*" style="display: none;">
+                            <button id="add-note-btn" class="btn-primary small" style="margin: 0;"><i class="fas fa-plus"></i> New Note</button>
+                        </div>
                     </div>
                     <div class="notes-grid" id="notes-grid"></div>
                 </div>
