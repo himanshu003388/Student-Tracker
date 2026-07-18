@@ -58,6 +58,8 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 let tokenClient;
 let accessToken = null;
 let isSyncing = false;
+let driveFileIdCache = null;
+let syncTimeout = null;
 
 function initGoogleAuth() {
     if (typeof google === 'undefined') {
@@ -127,8 +129,11 @@ async function syncFromDrive() {
     try {
         let fileId = await getDriveFileId();
         if (fileId) {
-            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&t=${Date.now()}`, {
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Cache-Control': 'no-cache'
+                }
             });
             const data = await res.json();
             if (data && data.theme) { // Simple check for valid state
@@ -185,13 +190,15 @@ async function syncToDrive(stateToSync) {
 }
 
 async function getDriveFileId() {
+    if (driveFileIdCache) return driveFileIdCache;
     try {
         const res = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='cs_dashboard_data.json'`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const data = await res.json();
         if (data.files && data.files.length > 0) {
-            return data.files[0].id;
+            driveFileIdCache = data.files[0].id;
+            return driveFileIdCache;
         }
     } catch (e) {
         console.error('Error getting drive file id:', e);
@@ -199,14 +206,30 @@ async function getDriveFileId() {
     return null;
 }
 
+// Auto-sync when returning to the tab
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && accessToken && !isSyncing) {
+        syncFromDrive();
+    }
+});
+
 window.addEventListener('load', initGoogleAuth);
 // -------------------------------
+
+function scheduleSyncToDrive(state) {
+    if (!accessToken || isSyncing) return;
+    if (syncTimeout) clearTimeout(syncTimeout);
+    // Debounce the upload to avoid rapid overlapping API calls
+    syncTimeout = setTimeout(() => {
+        syncToDrive(state);
+    }, 2000);
+}
 
 function saveState() {
     localStorage.setItem('cs_dashboard_data', JSON.stringify(appState));
     updateStats();
     if (!isSyncing) {
-        syncToDrive(appState);
+        scheduleSyncToDrive(appState);
     }
 }
 
