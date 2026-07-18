@@ -1021,23 +1021,46 @@ function renderExams() {
 
 if (elements.addExamBtn) {
     elements.addExamBtn.addEventListener('click', () => {
-        const name = prompt('Enter the name of the Exam or Deadline:');
-        if (!name) return;
-        const dateStr = prompt('Enter the date (YYYY-MM-DD):');
-        if (!dateStr || isNaN(new Date(dateStr).getTime())) {
-            alert('Invalid date format. Please use YYYY-MM-DD');
-            return;
-        }
+        if (!elements.modalOverlay || !elements.modalBody || !elements.modalTitle) return;
         
-        if (!appState.exams) appState.exams = [];
-        appState.exams.push({
-            id: Date.now(),
-            name: name.trim(),
-            date: dateStr
+        elements.modalTitle.textContent = 'Add Upcoming Exam or Deadline';
+        elements.modalBody.innerHTML = `
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="exam-name-input" placeholder="e.g. Final Math Exam">
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="exam-date-input">
+            </div>
+            <button id="save-exam-btn" class="btn-primary block">Save Deadline</button>
+        `;
+        
+        elements.modalOverlay.classList.remove('hidden');
+        
+        // Focus the name input for convenience
+        setTimeout(() => document.getElementById('exam-name-input').focus(), 100);
+        
+        document.getElementById('save-exam-btn').addEventListener('click', () => {
+            const name = document.getElementById('exam-name-input').value.trim();
+            const dateStr = document.getElementById('exam-date-input').value;
+            
+            if (!name || !dateStr) {
+                alert('Please provide both a name and a date.');
+                return;
+            }
+            
+            if (!appState.exams) appState.exams = [];
+            appState.exams.push({
+                id: Date.now(),
+                name: name,
+                date: dateStr
+            });
+            
+            saveState();
+            renderExams();
+            elements.modalOverlay.classList.add('hidden');
         });
-        
-        saveState();
-        renderExams();
     });
 }
 
