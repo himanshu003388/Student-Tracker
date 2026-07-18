@@ -2298,7 +2298,8 @@ td {
   .top-nav {
     flex-wrap: nowrap;
     height: auto;
-    padding: 1.25rem 0.75rem 0.75rem;
+    min-height: 80px;
+    padding: 1.5rem 1rem 1.25rem;
   }
 
   .logo span {
@@ -2426,7 +2427,7 @@ td {
   }
 
   main {
-    padding: 5rem 0.5rem 0.5rem;
+    padding: 7.5rem 0.5rem 0.5rem;
   }
 
   .dashboard-grid-layout {
@@ -2798,7 +2799,7 @@ td {
   }
 
   main {
-    padding: 5rem 0.25rem 0.25rem;
+    padding: 7.5rem 0.25rem 0.25rem;
   }
 
 
