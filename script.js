@@ -1602,7 +1602,16 @@ function renderNotes() {
                     attachmentsHtml = '<div class="note-attachments" style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">';
                     note.attachments.forEach(att => {
                         const icon = att.mimeType && att.mimeType.includes('pdf') ? 'fa-file-pdf' : 'fa-image';
-                        attachmentsHtml += `<a href="${att.url}" target="_blank" class="attachment-badge" style="background: var(--canvas-soft); padding: 0.3rem 0.6rem; border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--link); text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid var(--border-color);"><i class="fas ${icon}"></i> ${escapeHtml(att.name)}</a>`;
+                        attachmentsHtml += `
+                        <a href="${att.url}" target="_blank" class="attachment-thumb" title="${escapeHtml(att.name)}" style="display: inline-flex; flex-direction: column; align-items: center; background: var(--canvas-soft); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; text-decoration: none; color: var(--text-color); width: 85px; flex-shrink: 0; box-shadow: var(--shadow-sm); transition: transform 0.2s;">
+                            <div style="width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid var(--border-color); position: relative; background: var(--canvas-color);">
+                                <i class="fas ${icon}" style="position: absolute; font-size: 1.8rem; color: var(--mute); z-index: 1;"></i>
+                                <img src="https://drive.google.com/thumbnail?id=${att.id}&sz=w200-h200" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 2;" onerror="this.style.display='none';">
+                            </div>
+                            <div style="width: 100%; padding: 0.3rem; font-size: 0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;">
+                                ${escapeHtml(att.name)}
+                            </div>
+                        </a>`;
                     });
                     attachmentsHtml += '</div>';
                 }
