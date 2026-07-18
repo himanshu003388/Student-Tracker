@@ -943,12 +943,12 @@ function renderExams() {
     // Sort exams by date
     const sortedExams = [...(appState.exams || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
     
+    elements.examCountdownContainer.style.display = 'block';
+    
     if (sortedExams.length === 0) {
-        elements.examCountdownContainer.style.display = 'none';
+        elements.examList.innerHTML = `<p style="text-align: center; color: var(--mute); font-size: 0.9rem; padding: 1rem 0;">No upcoming exams or deadlines.</p>`;
         return;
     }
-    
-    elements.examCountdownContainer.style.display = 'block';
     
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -1011,7 +1011,8 @@ if (elements.addExamBtn) {
         // Focus the name input for convenience
         setTimeout(() => document.getElementById('exam-name-input').focus(), 100);
         
-        document.getElementById('save-exam-btn').addEventListener('click', () => {
+        const saveBtn = document.getElementById('save-exam-btn');
+        saveBtn.onclick = () => {
             const name = document.getElementById('exam-name-input').value.trim();
             const dateStr = document.getElementById('exam-date-input').value;
             
@@ -1030,7 +1031,7 @@ if (elements.addExamBtn) {
             saveState();
             renderExams();
             elements.modalOverlay.classList.add('hidden');
-        });
+        };
     });
 }
 
