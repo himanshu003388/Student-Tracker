@@ -2302,7 +2302,7 @@ td {
   }
 
   .logo {
-    font-size: clamp(0.9rem, 4vw, 1.25rem);
+    font-size: clamp(1.2rem, 5vw, 1.5rem);
   }
 
   .logo span {
@@ -3272,9 +3272,7 @@ td {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .top-nav {
-    padding: 0 0.6rem;
-  }
+
 
 
 }
