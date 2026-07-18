@@ -429,6 +429,7 @@ function initNavigation() {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const target = link.getAttribute('data-section');
+            localStorage.setItem('cs_active_section', target);
 
             elements.navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
@@ -471,6 +472,13 @@ function initNavigation() {
                 dashboardLink.click();
             }
         });
+    }
+
+    // Restore active tab
+    const activeSection = localStorage.getItem('cs_active_section') || 'dashboard';
+    const activeLink = document.querySelector(`.nav-links a[data-section="${activeSection}"]`);
+    if (activeLink) {
+        activeLink.click();
     }
 }
 const MOTIVATIONAL_QUOTES = [
