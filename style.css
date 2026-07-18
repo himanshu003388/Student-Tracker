@@ -2295,26 +2295,35 @@ td {
     pointer-events: auto;
     padding: 0;
   }
+  .top-nav {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 0.5rem 0.75rem 0;
+  }
+
   .logo span {
-    display: none;
+    display: inline-block;
   }
   
   .auth-btn {
-    padding: 0.35rem 0.6rem;
-    font-size: 0.75rem;
-    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    gap: 0.5rem;
   }
   
-  /* Nav links on mobile - displayed as icons on top bar */
+  /* Nav links on mobile - displayed as icons on second bar */
   .nav-links {
     display: flex !important;
     flex-direction: row !important;
-    flex: 1 !important;
+    flex: 1 1 100% !important;
+    order: 3 !important;
     justify-content: space-evenly !important;
     position: static !important;
-    width: auto !important;
+    width: 100% !important;
     background: transparent !important;
-    padding: 0 0.5rem !important;
+    padding: 0.5rem 0 !important;
+    margin-top: 0.5rem !important;
+    border-top: 1px solid var(--hairline) !important;
     border-bottom: none !important;
     box-shadow: none !important;
     max-height: none !important;
@@ -2325,13 +2334,15 @@ td {
   }
 
   .nav-links a {
-    padding: 0.35rem;
-    font-size: 1.1rem;
+    flex-direction: column;
+    padding: 0.4rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
     border-radius: var(--radius-md);
   }
 
-  .nav-links a span {
-    display: none;
+  .nav-links a i {
+    font-size: 1.25rem;
   }
 
   .mobile-menu-btn {
