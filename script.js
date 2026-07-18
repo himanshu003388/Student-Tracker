@@ -1618,51 +1618,14 @@ window.editNote = (id) => {
                 <label>Content</label>
                 <textarea id="edit-note-content" rows="5" required>${escapeHtml(note.content)}</textarea>
             </div>
-            <div class="form-group">
-                <label>Attach PDF/Images</label>
-                <input type="file" id="edit-note-attachments" accept=".pdf,image/*" multiple style="margin-top: 0.5rem;">
-                <small id="edit-upload-status" style="display: block; margin-top: 0.5rem; color: var(--link); font-weight: 500;"></small>
-            </div>
             <button type="submit" id="edit-save-btn" class="btn-primary block" style="margin-top: 1rem;">Save Changes</button>
         </form>
     `);
 
-    document.getElementById('edit-note-form').addEventListener('submit', async (e) => {
+    document.getElementById('edit-note-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const submitBtn = document.getElementById('edit-save-btn');
-        const statusText = document.getElementById('edit-upload-status');
-        const fileInput = document.getElementById('edit-note-attachments');
-        
-        let newAttachments = [];
-        if (fileInput.files.length > 0) {
-            if (!accessToken) {
-                alert("Please wait for Google Drive to connect, or sign in to upload files.");
-                return;
-            }
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Uploading...';
-            statusText.textContent = 'Uploading files to Google Drive, please wait...';
-            for (let i = 0; i < fileInput.files.length; i++) {
-                try {
-                    const fileData = await uploadFileToDrive(fileInput.files[i]);
-                    newAttachments.push({
-                        id: fileData.id,
-                        name: fileData.name,
-                        url: fileData.webViewLink,
-                        mimeType: fileInput.files[i].type
-                    });
-                } catch (err) {
-                    console.error("Upload error", err);
-                    alert("Failed to upload " + fileInput.files[i].name);
-                }
-            }
-        }
-        
         note.title = document.getElementById('edit-note-title').value.trim();
         note.content = document.getElementById('edit-note-content').value.trim();
-        if (!note.attachments) note.attachments = [];
-        note.attachments = note.attachments.concat(newAttachments);
-        
         saveState();
         renderNotes();
         closeModal();
@@ -1682,57 +1645,76 @@ if (addNoteBtn) {
                     <label>Content</label>
                     <textarea id="note-content" rows="5" required></textarea>
                 </div>
-                <div class="form-group">
-                    <label>Attach PDF/Images</label>
-                    <input type="file" id="note-attachments" accept=".pdf,image/*" multiple style="margin-top: 0.5rem;">
-                    <small id="upload-status" style="display: block; margin-top: 0.5rem; color: var(--link); font-weight: 500;"></small>
-                </div>
                 <button type="submit" id="save-note-btn" class="btn-primary block" style="margin-top: 1rem;">Save Note</button>
             </form>
         `);
 
-        document.getElementById('add-note-form').addEventListener('submit', async (e) => {
+        document.getElementById('add-note-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const submitBtn = document.getElementById('save-note-btn');
-            const statusText = document.getElementById('upload-status');
-            const fileInput = document.getElementById('note-attachments');
-            
-            let attachments = [];
-            if (fileInput.files.length > 0) {
-                if (!accessToken) {
-                    alert("Please wait for Google Drive to connect, or sign in to upload files.");
-                    return;
-                }
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Uploading...';
-                statusText.textContent = 'Uploading files to Google Drive, please wait...';
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    try {
-                        const fileData = await uploadFileToDrive(fileInput.files[i]);
-                        attachments.push({
-                            id: fileData.id,
-                            name: fileData.name,
-                            url: fileData.webViewLink,
-                            mimeType: fileInput.files[i].type
-                        });
-                    } catch (err) {
-                        console.error("Upload error", err);
-                        alert("Failed to upload " + fileInput.files[i].name);
-                    }
-                }
-            }
-            
             appState.notes.push({
                 id: Date.now(),
                 title: document.getElementById('note-title').value.trim(),
                 content: document.getElementById('note-content').value.trim(),
                 date: getLocalDateKey(),
-                attachments: attachments
+                attachments: []
             });
             saveState();
             renderNotes();
             closeModal();
         });
+    });
+}
+
+const globalAddFiles = document.getElementById('global-add-files');
+if (globalAddFiles) {
+    globalAddFiles.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (files.length === 0) return;
+        
+        if (!accessToken) {
+            alert("Please wait for Google Drive to connect, or sign in to upload files.");
+            e.target.value = '';
+            return;
+        }
+
+        const labelBtn = document.querySelector('label[for="global-add-files"]');
+        const originalText = labelBtn.innerHTML;
+        labelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+        labelBtn.style.pointerEvents = 'none';
+        
+        let attachments = [];
+        
+        for (let i = 0; i < files.length; i++) {
+            try {
+                const fileData = await uploadFileToDrive(files[i]);
+                attachments.push({
+                    id: fileData.id,
+                    name: fileData.name,
+                    url: fileData.webViewLink,
+                    mimeType: files[i].type
+                });
+            } catch (err) {
+                console.error("Upload error", err);
+                alert("Failed to upload " + files[i].name);
+            }
+        }
+        
+        if (attachments.length > 0) {
+            const noteTitle = attachments.length === 1 ? attachments[0].name : `${attachments.length} Uploaded Files`;
+            appState.notes.push({
+                id: Date.now(),
+                title: noteTitle,
+                content: 'Uploaded via quick add.',
+                date: getLocalDateKey(),
+                attachments: attachments
+            });
+            saveState();
+            renderNotes();
+        }
+        
+        labelBtn.innerHTML = originalText;
+        labelBtn.style.pointerEvents = 'auto';
+        e.target.value = '';
     });
 }
 
