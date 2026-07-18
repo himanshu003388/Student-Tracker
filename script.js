@@ -170,8 +170,33 @@ async function syncDriveFolders(data) {
             return json.files || [];
         };
 
+        const fetchDriveTree = async (rootId) => {
+            if (!rootId) return [];
+            let allFiles = [];
+            let foldersToSearch = [rootId];
+            
+            while(foldersToSearch.length > 0) {
+                const chunk = foldersToSearch.splice(0, 10);
+                const parentQueries = chunk.map(id => `'${id}' in parents`).join(' or ');
+                const q = encodeURIComponent(`(${parentQueries}) and trashed=false`);
+                
+                const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,webViewLink,parents)`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (!res.ok) throw new Error("Failed to fetch tree");
+                const json = await res.json();
+                
+                if (json.files && json.files.length > 0) {
+                    allFiles.push(...json.files);
+                    const subFolders = json.files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+                    foldersToSearch.push(...subFolders.map(f => f.id));
+                }
+            }
+            return allFiles;
+        };
+
         const [driveDocs, driveNotes] = await Promise.all([
-            fetchFiles(docFolderId),
+            fetchDriveTree(docFolderId),
             fetchFiles(notesFolderId)
         ]);
         
@@ -186,13 +211,16 @@ async function syncDriveFolders(data) {
         const existingDocIds = new Set(data.documents.map(d => d.id));
         for (const file of driveDocs) {
             if (!existingDocIds.has(file.id)) {
+                let pid = file.parents && file.parents[0];
+                if (pid === docFolderId) pid = 'root';
                 data.documents.push({
                     id: file.id,
-                    name: file.name.replace(/\.[^/.]+$/, ""),
+                    name: file.mimeType === 'application/vnd.google-apps.folder' ? file.name : file.name.replace(/\.[^/.]+$/, ""),
                     url: file.webViewLink,
                     mimeType: file.mimeType,
                     thumbData: null,
-                    dateAdded: getLocalDateKey()
+                    dateAdded: getLocalDateKey(),
+                    parentId: pid || 'root'
                 });
             }
         }
@@ -410,11 +438,14 @@ async function getOrCreateDriveFolder(folderName) {
     return null;
 }
 
-async function uploadFileToDrive(file, folderName) {
+async function uploadFileToDrive(file, folderNameOrId, isId = false) {
     if (!accessToken) throw new Error('Not authenticated');
     
-    const folderId = await getOrCreateDriveFolder(folderName);
-    if (!folderId) throw new Error('Could not get upload folder');
+    let folderId = folderNameOrId;
+    if (!isId) {
+        folderId = await getOrCreateDriveFolder(folderNameOrId);
+        if (!folderId) throw new Error('Could not get upload folder');
+    }
 
     const metadata = {
         name: file.name,
@@ -2201,7 +2232,8 @@ function sanitizeAppState(data) {
                 url: String(doc.url || ''),
                 mimeType: String(doc.mimeType || ''),
                 thumbData: doc.thumbData ? String(doc.thumbData) : null,
-                dateAdded: String(doc.dateAdded || getLocalDateKey())
+                dateAdded: String(doc.dateAdded || getLocalDateKey()),
+                parentId: doc.parentId ? String(doc.parentId) : 'root'
             }));
     } else {
         cleanState.documents = [];
@@ -2336,43 +2368,162 @@ if (elements.importFile) {
     });
 }
 
+let currentFolderId = 'root';
+
+function renderDocumentBreadcrumbs() {
+    const bcContainer = document.getElementById('document-breadcrumbs');
+    if (!bcContainer) return;
+    
+    let html = `<a href="#" onclick="navigateToFolder('root'); return false;" style="color: var(--primary-color); text-decoration: none;"><i class="fas fa-home"></i> Home</a>`;
+    
+    if (currentFolderId !== 'root') {
+        const path = [];
+        let curr = appState.documents.find(d => d.id === currentFolderId);
+        while (curr) {
+            path.unshift(curr);
+            curr = appState.documents.find(d => d.id === curr.parentId);
+        }
+        path.forEach(folder => {
+            html += ` <i class="fas fa-chevron-right" style="font-size: 0.7rem; opacity: 0.5;"></i> <a href="#" onclick="navigateToFolder('${folder.id}'); return false;" style="color: var(--primary-color); text-decoration: none;">${escapeHtml(folder.name)}</a>`;
+        });
+    }
+    bcContainer.innerHTML = html;
+}
+
+window.navigateToFolder = (folderId) => {
+    currentFolderId = folderId;
+    renderDocumentBreadcrumbs();
+    renderDocuments();
+};
+
+window.createNewFolder = async () => {
+    const folderName = prompt("Enter folder name:");
+    if (!folderName) return;
+    
+    if (!accessToken) {
+        alert("Please sign in to Google Drive to create folders.");
+        return;
+    }
+    
+    const newFolderBtn = document.getElementById('new-folder-btn');
+    if (newFolderBtn) {
+        newFolderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+        newFolderBtn.style.pointerEvents = 'none';
+    }
+    
+    try {
+        let actualParentId = currentFolderId;
+        if (currentFolderId === 'root') {
+            actualParentId = await getOrCreateDriveFolder('Student Tracker Documents');
+        }
+        
+        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: folderName,
+                mimeType: 'application/vnd.google-apps.folder',
+                parents: [actualParentId]
+            })
+        });
+        
+        if (!createRes.ok) throw new Error("Failed to create folder");
+        const createData = await createRes.json();
+        
+        if (!appState.documents) appState.documents = [];
+        appState.documents.push({
+            id: createData.id,
+            name: folderName,
+            url: `https://drive.google.com/drive/folders/${createData.id}`,
+            mimeType: 'application/vnd.google-apps.folder',
+            thumbData: null,
+            dateAdded: getLocalDateKey(),
+            parentId: currentFolderId
+        });
+        saveState();
+        renderDocuments();
+    } catch (err) {
+        console.error("Create folder error", err);
+        alert("Failed to create folder.");
+    }
+    
+    if (newFolderBtn) {
+        newFolderBtn.innerHTML = '<i class="fas fa-folder-plus"></i> New Folder';
+        newFolderBtn.style.pointerEvents = 'auto';
+    }
+};
+
 // --- Documents Section Logic ---
 function renderDocuments() {
+    renderDocumentBreadcrumbs();
     const grid = document.getElementById('documents-grid');
     if (!grid) return;
     
     const searchTerm = (document.getElementById('document-search')?.value || '').toLowerCase();
-    const filteredDocs = (appState.documents || []).filter(doc => 
-        doc.name.toLowerCase().includes(searchTerm)
+    let filteredDocs = (appState.documents || []).filter(doc => 
+        (searchTerm ? doc.name.toLowerCase().includes(searchTerm) : doc.parentId === currentFolderId)
     );
+    
+    // Sort so folders appear first
+    filteredDocs.sort((a, b) => {
+        const aIsFolder = a.mimeType === 'application/vnd.google-apps.folder';
+        const bIsFolder = b.mimeType === 'application/vnd.google-apps.folder';
+        if (aIsFolder && !bIsFolder) return -1;
+        if (!aIsFolder && bIsFolder) return 1;
+        return a.name.localeCompare(b.name);
+    });
 
     if (filteredDocs.length === 0) {
         grid.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1; padding: 4rem; text-align: center; color: var(--mute);">
             <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-            <p>No documents found. Upload your marksheets, IDs, and assignments here.</p>
+            <p>${searchTerm ? 'No documents found.' : 'This folder is empty. Upload files or create folders.'}</p>
         </div>`;
         return;
     }
 
     grid.innerHTML = filteredDocs.map(doc => {
-        const icon = doc.mimeType && doc.mimeType.includes('pdf') ? 'fa-file-pdf' : 'fa-file-image';
-        return `
-        <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: 0;">
-            <a href="${doc.url}" target="_blank" style="display: block; position: relative; height: 160px; background: var(--canvas-soft); text-decoration: none; color: inherit;">
-                <i class="fas ${icon}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: var(--mute); z-index: 1;"></i>
-                <img src="${doc.thumbData || `https://drive.google.com/thumbnail?id=${doc.id}&sz=w400-h400`}" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 2;" onerror="this.style.display='none';">
-            </a>
-            <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1;">
-                <h4 style="margin: 0; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
-                    <span style="font-size: 0.75rem; color: var(--mute);">${escapeHtml(doc.dateAdded)}</span>
-                    <div>
-                        <button class="btn-text" onclick="renameDocument('${doc.id}')" style="color: var(--mute); margin-right: 0.5rem;"><i class="fas fa-edit"></i></button>
-                        <button class="btn-text" onclick="deleteDocument('${doc.id}')" style="color: #ef4444;"><i class="fas fa-trash"></i></button>
+        const isFolder = doc.mimeType === 'application/vnd.google-apps.folder';
+        
+        if (isFolder) {
+            return `
+            <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: 0; cursor: pointer; border-top: 4px solid var(--primary-color);">
+                <div onclick="navigateToFolder('${doc.id}')" style="display: flex; align-items: center; justify-content: center; height: 120px; background: var(--canvas-soft);">
+                    <i class="fas fa-folder" style="font-size: 4rem; color: var(--primary-color); opacity: 0.8;"></i>
+                </div>
+                <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1;">
+                    <h4 onclick="navigateToFolder('${doc.id}')" style="margin: 0; font-size: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                        <span style="font-size: 0.75rem; color: var(--mute);">${escapeHtml(doc.dateAdded)}</span>
+                        <div>
+                            <button class="btn-text" onclick="renameDocument('${doc.id}')" style="color: var(--mute); margin-right: 0.5rem;" title="Rename Folder"><i class="fas fa-edit"></i></button>
+                            <button class="btn-text" onclick="deleteDocument('${doc.id}')" style="color: #ef4444;" title="Delete Folder & Contents"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
+        } else {
+            const icon = doc.mimeType && doc.mimeType.includes('pdf') ? 'fa-file-pdf' : 'fa-file-image';
+            return `
+            <div class="card" style="display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+                <a href="${doc.url}" target="_blank" style="display: block; position: relative; height: 160px; background: var(--canvas-soft); text-decoration: none; color: inherit;">
+                    <i class="fas ${icon}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 3rem; color: var(--mute); z-index: 1;"></i>
+                    <img src="${doc.thumbData || `https://drive.google.com/thumbnail?id=${doc.id}&sz=w400-h400`}" style="width: 100%; height: 100%; object-fit: cover; position: relative; z-index: 2;" onerror="this.style.display='none';">
+                </a>
+                <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1;">
+                    <h4 style="margin: 0; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                        <span style="font-size: 0.75rem; color: var(--mute);">${escapeHtml(doc.dateAdded)}</span>
+                        <div>
+                            <button class="btn-text" onclick="renameDocument('${doc.id}')" style="color: var(--mute); margin-right: 0.5rem;"><i class="fas fa-edit"></i></button>
+                            <button class="btn-text" onclick="deleteDocument('${doc.id}')" style="color: #ef4444;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
     }).join('');
 }
 
@@ -2443,6 +2594,11 @@ if (uploadDocInput) {
         
         if (!appState.documents) appState.documents = [];
 
+        let actualParentId = currentFolderId;
+        if (currentFolderId === 'root') {
+            actualParentId = await getOrCreateDriveFolder('Student Tracker Documents');
+        }
+
         for (let i = 0; i < files.length; i++) {
             try {
                 let thumbData = null;
@@ -2472,14 +2628,15 @@ if (uploadDocInput) {
                         reader.readAsDataURL(files[i]);
                     });
                 }
-                const fileData = await uploadFileToDrive(files[i], 'Student Tracker Documents');
+                const fileData = await uploadFileToDrive(files[i], actualParentId, true);
                 appState.documents.push({
                     id: fileData.id,
                     name: files[i].name.replace(/\.[^/.]+$/, ""), // Strip extension for display title
                     url: fileData.webViewLink,
                     mimeType: files[i].type,
                     thumbData: thumbData,
-                    dateAdded: getLocalDateKey()
+                    dateAdded: getLocalDateKey(),
+                    parentId: currentFolderId
                 });
             } catch (err) {
                 console.error("Upload error", err);
