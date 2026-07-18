@@ -51,6 +51,12 @@ An elegant workspace to manage daily tasks, track habits, log finances, prepare 
 *   **Google Drive Integration:** Sync your workspace settings, habits, tasks, and budgets directly to Google Drive.
 *   **Local Backup:** The settings panel allows you to **Export** your complete user database as a readable `.json` file, and **Import** it on any device to resume your work.
 
+### 🔒 Security & Privacy (100% Secure)
+*   **OAuth 2.0 Authentication:** Secure Google Sign-In with no passwords stored locally or transmitted to third-party servers.
+*   **Direct API Integration:** Files and documents are uploaded directly to your personal Google Drive via Google's official REST API.
+*   **Zero Middleman Architecture:** There are no backend servers intercepting your data. Everything flows directly between your browser and Google's secure infrastructure.
+*   **Client-Side Processing:** All state management and analytics calculations happen securely in your browser.
+
 ### 🌓 Premium Custom Theme System
 *   **Vibrant Accent Coloring:** High-contrast blue colors (`#0088cc`), custom glow filters, and animated gradient accents.
 *   **Glassmorphism Layout:** Sticky headers with blur backdrops and floating cards.
@@ -76,6 +82,17 @@ An elegant workspace to manage daily tasks, track habits, log finances, prepare 
 | **[Font Awesome 6](https://fontawesome.com/)** | Sleek iconography |
 | **[Google Fonts](https://fonts.google.com/)** | Modern font faces (Inter, JetBrains Mono, Space Grotesk) |
 | **LocalStorage API** | Secure, offline client-side database persistence with backup/restore features |
+
+---
+
+## 💡 Technical Highlights (For Resume / CV)
+
+*   **Frontend Architecture:** Built a serverless Single Page Application (SPA) using Vanilla JS, demonstrating strong fundamentals in DOM manipulation, Event Delegation, and modular design.
+*   **API Integrations:** Integrated **Google Identity Services (OAuth 2.0)** and **Google Drive REST API (v3)** for seamless cloud storage, authentication, and cross-device sync.
+*   **State Management:** Designed a robust client-side caching system using `localStorage` to persist data locally, minimizing network latency and unnecessary API calls.
+*   **Modern UI/UX Design:** Implemented a responsive **Glassmorphism** design system with dynamic theming (Light/Dark mode), custom CSS variables, and fluid micro-animations.
+*   **Data Visualization:** Utilized **Chart.js** to render dynamic, interactive charts for financial tracking and habit analytics.
+*   **Asynchronous JavaScript:** Extensively used `async/await`, Promises, and Fetch API for smooth, non-blocking asynchronous operations.
 
 ---
 
