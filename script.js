@@ -239,7 +239,7 @@ function scheduleSyncToDrive(state) {
     // Debounce the upload to avoid rapid overlapping API calls
     syncTimeout = setTimeout(() => {
         syncToDrive(state);
-    }, 2000);
+    }, 500);
 }
 
 function saveState() {
