@@ -961,11 +961,16 @@ function renderExams() {
         const diffTime = examDate - today;
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
-        let progress = 0;
+        const creationDate = new Date(exam.id);
+        creationDate.setHours(0,0,0,0);
+        
+        const totalDurationDays = Math.round((examDate - creationDate) / (1000 * 60 * 60 * 24));
+        
+        let progress = 100;
         if (diffDays <= 0) {
-            progress = 100;
-        } else if (diffDays <= 30) {
-            progress = ((30 - diffDays) / 30) * 100;
+            progress = 0;
+        } else if (totalDurationDays > 0) {
+            progress = Math.max(0, Math.min(100, (diffDays / totalDurationDays) * 100));
         }
         
         let barColor = 'var(--link)'; // Blue
