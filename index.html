@@ -225,7 +225,10 @@
                     <div id="notes-upload-progress" class="upload-progress-container hidden" style="padding: 1rem; background: var(--card-bg); border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
                             <span id="notes-upload-filename" style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; display: inline-block;">Uploading file...</span>
-                            <span id="notes-upload-stats">0% (0 / 0 MB)</span>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span id="notes-upload-stats">0% (0 / 0 MB)</span>
+                                <button id="notes-upload-cancel" style="background: none; border: none; color: var(--error); cursor: pointer; padding: 0.2rem; border-radius: 4px; display: flex; align-items: center; justify-content: center;" title="Cancel Upload"><i class="fas fa-times-circle"></i></button>
+                            </div>
                         </div>
                         <div style="width: 100%; background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; outline: 1px solid var(--link); outline-offset: 2px;">
                             <div id="notes-upload-bar" style="width: 0%; height: 100%; background: var(--link); transition: width 0.2s;"></div>
@@ -581,7 +584,10 @@
             <div id="docs-upload-progress" class="upload-progress-container hidden" style="padding: 1rem; background: var(--card-bg); border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--border);">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.9rem;">
                     <span id="docs-upload-filename" style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; display: inline-block;">Uploading file...</span>
-                    <span id="docs-upload-stats">0% (0 / 0 MB)</span>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span id="docs-upload-stats">0% (0 / 0 MB)</span>
+                        <button id="docs-upload-cancel" style="background: none; border: none; color: var(--error); cursor: pointer; padding: 0.2rem; border-radius: 4px; display: flex; align-items: center; justify-content: center;" title="Cancel Upload"><i class="fas fa-times-circle"></i></button>
+                    </div>
                 </div>
                 <div style="width: 100%; background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; outline: 1px solid var(--link); outline-offset: 2px;">
                     <div id="docs-upload-bar" style="width: 0%; height: 100%; background: var(--link); transition: width 0.2s;"></div>

@@ -441,7 +441,10 @@ async function getOrCreateDriveFolder(folderName) {
     return null;
 }
 
-async function uploadFileToDrive(file, folderNameOrId, isId = false, onProgress = null) {
+let currentNotesUploadController = null;
+let currentDocsUploadController = null;
+
+async function uploadFileToDrive(file, folderNameOrId, isId = false, onProgress = null, abortController = null) {
     if (!accessToken) throw new Error('Not authenticated');
     
     let folderId = folderNameOrId;
@@ -479,6 +482,11 @@ async function uploadFileToDrive(file, folderNameOrId, isId = false, onProgress 
                 const body = new Blob([metadataBlob, fileBlob, closeBlob]);
 
                 const xhr = new XMLHttpRequest();
+                if (abortController) {
+                    abortController.signal.addEventListener('abort', () => {
+                        xhr.abort();
+                    });
+                }
                 xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,iconLink');
                 xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
                 xhr.setRequestHeader('Content-Type', `multipart/related; boundary=${boundary}`);
@@ -508,6 +516,7 @@ async function uploadFileToDrive(file, folderNameOrId, isId = false, onProgress 
                     }
                 };
 
+                xhr.onabort = () => reject(new Error("Upload Cancelled"));
                 xhr.onerror = () => reject(new Error("Network Error"));
                 xhr.send(body);
             } catch (err) {
@@ -1962,6 +1971,11 @@ if (globalAddFiles) {
 
         if (progressContainer) progressContainer.classList.remove('hidden');
         
+        if (currentNotesUploadController) {
+            currentNotesUploadController.abort();
+        }
+        currentNotesUploadController = new AbortController();
+        
         let attachments = [];
         
         for (let i = 0; i < files.length; i++) {
@@ -2003,7 +2017,7 @@ if (globalAddFiles) {
                         if (progressBar) progressBar.style.width = `${percent}%`;
                         if (statsDisplay) statsDisplay.textContent = `${percent}% (${(loaded / (1024*1024)).toFixed(2)} / ${(total / (1024*1024)).toFixed(2)} MB)`;
                     }
-                });
+                }, currentNotesUploadController);
                 attachments.push({
                     id: fileData.id,
                     name: fileData.name,
@@ -2012,6 +2026,10 @@ if (globalAddFiles) {
                     thumbData: thumbData
                 });
             } catch (err) {
+                if (err.message === "Upload Cancelled") {
+                    console.log("Notes upload cancelled by user");
+                    break;
+                }
                 console.error("Upload error", err);
                 alert("Failed to upload " + files[i].name + "\nError: " + (err.message || JSON.stringify(err)));
             }
@@ -2630,6 +2648,11 @@ if (uploadDocInput) {
         const progressBar = document.getElementById('docs-upload-bar');
 
         if (progressContainer) progressContainer.classList.remove('hidden');
+
+        if (currentDocsUploadController) {
+            currentDocsUploadController.abort();
+        }
+        currentDocsUploadController = new AbortController();
         
         if (!appState.documents) appState.documents = [];
 
@@ -2676,7 +2699,7 @@ if (uploadDocInput) {
                         if (progressBar) progressBar.style.width = `${percent}%`;
                         if (statsDisplay) statsDisplay.textContent = `${percent}% (${(loaded / (1024*1024)).toFixed(2)} / ${(total / (1024*1024)).toFixed(2)} MB)`;
                     }
-                });
+                }, currentDocsUploadController);
                 appState.documents.push({
                     id: fileData.id,
                     name: files[i].name.replace(/\.[^/.]+$/, ""), // Strip extension for display title
@@ -2688,6 +2711,10 @@ if (uploadDocInput) {
                     _createdTS: Date.now()
                 });
             } catch (err) {
+                if (err.message === "Upload Cancelled") {
+                    console.log("Docs upload cancelled by user");
+                    break;
+                }
                 console.error("Upload error", err);
                 alert("Failed to upload " + files[i].name);
             }
@@ -3609,4 +3636,33 @@ function initPomodoro() {
     resetTimerDisplay();
     updateStatsDisplay();
     updateMuteButtonDisplay();
+}
+
+// --- Upload Cancellation Listeners ---
+const notesUploadCancelBtn = document.getElementById('notes-upload-cancel');
+if (notesUploadCancelBtn) {
+    notesUploadCancelBtn.addEventListener('click', () => {
+        if (currentNotesUploadController) currentNotesUploadController.abort();
+        const progressContainer = document.getElementById('notes-upload-progress');
+        if (progressContainer) progressContainer.classList.add('hidden');
+        const labelBtn = document.querySelector('label[for="global-add-files"]');
+        if (labelBtn) {
+            labelBtn.innerHTML = '<i class="fas fa-file-upload"></i> Add Files';
+            labelBtn.style.pointerEvents = 'auto';
+        }
+    });
+}
+
+const docsUploadCancelBtn = document.getElementById('docs-upload-cancel');
+if (docsUploadCancelBtn) {
+    docsUploadCancelBtn.addEventListener('click', () => {
+        if (currentDocsUploadController) currentDocsUploadController.abort();
+        const progressContainer = document.getElementById('docs-upload-progress');
+        if (progressContainer) progressContainer.classList.add('hidden');
+        const labelBtn = document.getElementById('upload-doc-btn');
+        if (labelBtn) {
+            labelBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+            labelBtn.style.pointerEvents = 'auto';
+        }
+    });
 }
