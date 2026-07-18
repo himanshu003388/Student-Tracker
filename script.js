@@ -160,30 +160,47 @@ async function syncToDrive(stateToSync) {
     if (!accessToken || isSyncing) return;
     try {
         let fileId = await getDriveFileId();
-        const metadata = {
-            name: 'cs_dashboard_data.json',
-            parents: ['appDataFolder']
-        };
         const fileContent = JSON.stringify(stateToSync);
-        const file = new Blob([fileContent], { type: 'application/json' });
-
-        const form = new FormData();
-        form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-        form.append('file', file);
-
-        let url = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-        let method = 'POST';
 
         if (fileId) {
-            url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
-            method = 'PATCH';
-        }
+            // If file exists, just update the content using uploadType=media (simplest and most reliable)
+            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: fileContent
+            });
+        } else {
+            // If file doesn't exist, create it in appDataFolder using multipart/related
+            const metadata = {
+                name: 'cs_dashboard_data.json',
+                parents: ['appDataFolder']
+            };
+            const boundary = '-------314159265358979323846';
+            const delimiter = "\r\n--" + boundary + "\r\n";
+            const close_delim = "\r\n--" + boundary + "--";
 
-        await fetch(url, {
-            method: method,
-            headers: { 'Authorization': `Bearer ${accessToken}` },
-            body: form
-        });
+            const multipartRequestBody =
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                JSON.stringify(metadata) +
+                delimiter +
+                'Content-Type: application/json\r\n\r\n' +
+                fileContent +
+                close_delim;
+
+            await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': `multipart/related; boundary=${boundary}`
+                },
+                body: multipartRequestBody
+            });
+        }
+        console.log("Successfully synced to Google Drive!");
     } catch (e) {
         console.error('Error syncing to drive:', e);
     }
