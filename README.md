@@ -3,7 +3,7 @@
 # 🚀 Student Tracker
 
 **A premium, high-performance personal productivity suite built entirely for students.**  
-An elegant workspace to manage daily tasks, track habits, log finances, and stay focused—fully local and secure.
+An elegant workspace to manage daily tasks, track habits, log finances, prepare for exams, and stay focused—now with seamless Cloud Sync!
 
 [![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 [![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
@@ -16,10 +16,18 @@ An elegant workspace to manage daily tasks, track habits, log finances, and stay
 *"The secret of getting ahead is getting started."* — Mark Twain
 </div>
 
+## ✨ What's New?
+- **☁️ Google Drive Sync (New!)**: Seamlessly sync your data across devices using Google Authentication. Never lose your progress!
+- **📚 Documents Manager**: Organize and upload your study materials, notes, and resources directly to your connected Google Drive.
+- **⏰ Exam Countdown Tracker**: Keep track of upcoming exams with a built-in countdown system right on your dashboard.
+
+---
+
 ## 🌟 Core Features
 
 ### 🏠 Interactive Dashboard
 *   **Live Clock & Weather-ready Widget:** Keeps you updated on the current date and time.
+*   **Exam Countdown Tracker:** Add important exam dates and visually track how many days are left to prepare.
 *   **Daily Tasks Workspace:** Easily add, edit, and filter your to-dos. Supports interactive **Drag-and-Drop** reordering to prioritize tasks.
 *   **Quick Links Portal:** Fully customizable bookmark dashboard. Change URLs, add icons, and sort via **Drag-and-Drop**.
 *   **Pomodoro Focus Timer:** Beautiful circular SVG countdown with custom time modes (Focus, Short Break, Long Break), optimized visual progress ring opacity, and interactive audio alerts.
@@ -38,6 +46,11 @@ An elegant workspace to manage daily tasks, track habits, log finances, and stay
 *   **Visual Analytics:** Interactive pie charts and 6-month budget bars powered by Chart.js.
 *   **Auto-Adjusting & Responsive Layout:** Dynamic layout alignment on desktop to prevent empty space, paired with a fully optimized mobile layout for seamless logging on the go.
 
+### ☁️ Cloud Sync & Data Portability
+*   **Google Authentication:** Securely log in with your Google Account.
+*   **Google Drive Integration:** Sync your workspace settings, habits, tasks, and budgets directly to Google Drive.
+*   **Local Backup:** The settings panel allows you to **Export** your complete user database as a readable `.json` file, and **Import** it on any device to resume your work.
+
 ### 🌓 Premium Custom Theme System
 *   **Vibrant Accent Coloring:** High-contrast blue colors (`#0088cc`), custom glow filters, and animated gradient accents.
 *   **Glassmorphism Layout:** Sticky headers with blur backdrops and floating cards.
@@ -51,13 +64,14 @@ An elegant workspace to manage daily tasks, track habits, log finances, and stay
 📦 Student Tracker
  ┣ 📄 index.html      → Structural layout & semantic markup
  ┣ 🎨 style.css       → Premium themes, CSS variables, and layout system
- ┗ ⚙️  script.js      → State management, local storage, & interactive features
+ ┗ ⚙️  script.js      → State management, Google Auth, & interactive features
 ```
 
 | Tech / Library | Purpose |
 | :--- | :--- |
 | **Vanilla HTML5 & CSS3** | Clean semantic codebase utilizing Flexbox, CSS Grid, and custom variables |
 | **Vanilla JavaScript** | High-speed DOM manipulation, drag-and-drop event handlers, and data sync |
+| **[Google Identity Services](https://developers.google.com/identity)** | Secure user authentication and Google Drive API integration |
 | **[Chart.js](https://www.chartjs.org/)** | Custom charts for budget distributions and habit analytics |
 | **[Font Awesome 6](https://fontawesome.com/)** | Sleek iconography |
 | **[Google Fonts](https://fonts.google.com/)** | Modern font faces (Inter, JetBrains Mono, Space Grotesk) |
@@ -76,11 +90,6 @@ git clone https://github.com/himanshu003388/Student-Tracker.git
 # 2. Run the application
 # Simply open index.html in any modern browser!
 ```
-
----
-
-## 💾 Data Portability
-Never lose your progress. The settings panel allows you to **Export** your complete user database as a readable `.json` file, and **Import** it on any device to resume your work.
 
 ---
 
