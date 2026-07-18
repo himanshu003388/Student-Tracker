@@ -513,14 +513,14 @@ function initQuotes() {
 function initClock() {
     const update = () => {
         const now = new Date();
-        if (elements.currentTime) elements.currentTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (elements.currentTime) elements.currentTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         if (elements.currentDate) elements.currentDate.textContent = now.toLocaleDateString(undefined, {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
 
         // Update Pomodoro Card Clock
         if (elements.pomodoroCardTime) {
-            elements.pomodoroCardTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            elements.pomodoroCardTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         }
         if (elements.pomodoroCardDate) {
             elements.pomodoroCardDate.textContent = now.toLocaleDateString(undefined, {
