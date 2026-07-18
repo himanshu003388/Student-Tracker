@@ -85,7 +85,9 @@ function initGoogleAuth() {
                 syncFromDrive();
             }
         }
-    } catch (e) { }
+    } catch (e) {
+        console.error("Error loading initial state:", e);
+    }
 
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
@@ -617,7 +619,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Seed / reset default links to the current default set (version-gated)
     if (appState._linksSeeded !== 'v2') {
         // Keep any user-added links (those not in old defaults by name), then prepend new defaults
-        const defaultNames = new Set(DEFAULT_STATE.links.map(l => l.name));
         const oldDefaultNames = new Set([
             'GitHub', 'LeetCode', 'GeeksforGeeks', 'LinkedIn', 'Stack Overflow',
             'Codeforces', 'HackerRank', 'CodeChef', 'YouTube', 'Dev.to'
@@ -838,9 +839,9 @@ function renderLinks() {
         const hasCustomIcon = link.icon && link.icon.includes('fa-');
         const domain = extractDomain(link.url);
         const sanitizedUrl = sanitizeUrl(link.url);
-        const logoHtml = hasCustomIcon
-            ? `<i class="${escapeHtml(link.icon)}"></i>`
-            : `<img class="link-logo" src="https://www.google.com/s2/favicons?domain=${escapeHtml(domain)}&sz=64"
+        const logoHtml = hasCustomIcon ?
+            `<i class="${escapeHtml(link.icon)}"></i>` :
+            `<img class="link-logo" src="https://www.google.com/s2/favicons?domain=${escapeHtml(domain)}&sz=64"
                    onerror="this.style.display='none';this.parentElement.querySelector('.link-logo-fallback').style.display='block'" alt="">
                <i class="fas fa-globe link-logo-fallback" style="display:none"></i>`;
         return `
@@ -1801,7 +1802,8 @@ function renderNotes() {
                         </div>
                     </div>
                 </div>
-            `}).join('');
+            `;
+        }).join('');
         }
     }
 }
@@ -2978,9 +2980,9 @@ function updateFilterOptions() {
     elements.filterMonth.value = currentFilterMonth || 'all';
 
     const currentReportMonth = elements.reportMonthSelector.value;
-    elements.reportMonthSelector.innerHTML = months.length > 0
-        ? months.map(m => `<option value="${m}">${new Date(m + '-01').toLocaleString('default', { month: 'short', year: 'numeric' })}</option>`).join('')
-        : '<option value="">No Data</option>';
+    elements.reportMonthSelector.innerHTML = months.length > 0 ?
+        months.map(m => `<option value="${m}">${new Date(m + '-01').toLocaleString('default', { month: 'short', year: 'numeric' })}</option>`).join('') :
+        '<option value="">No Data</option>';
     if (!currentReportMonth && months.length > 0) {
         elements.reportMonthSelector.value = months[0];
     } else if (months.length === 0) {
@@ -3339,7 +3341,8 @@ function initPomodoro() {
     const playChime = () => {
         if (appState.pomodoro.isMuted) return;
         try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContextClass();
 
             const playBeep = (startTime) => {
                 const playTone = (freq, vol) => {
@@ -3543,9 +3546,9 @@ function initPomodoro() {
     const updateMuteButtonDisplay = () => {
         if (elements.pomodoroMuteBtn) {
             const isMuted = appState.pomodoro.isMuted;
-            elements.pomodoroMuteBtn.innerHTML = isMuted
-                ? '<i class="fas fa-volume-mute"></i>'
-                : '<i class="fas fa-volume-up"></i>';
+            elements.pomodoroMuteBtn.innerHTML = isMuted ?
+                '<i class="fas fa-volume-mute"></i>' :
+                '<i class="fas fa-volume-up"></i>';
             elements.pomodoroMuteBtn.title = isMuted ? 'Unmute Timer Sound' : 'Mute Timer Sound';
         }
     };
