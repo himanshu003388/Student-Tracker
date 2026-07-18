@@ -2335,12 +2335,41 @@ function renderDocuments() {
                 <h4 style="margin: 0; font-size: 0.95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</h4>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
                     <span style="font-size: 0.75rem; color: var(--mute);">${escapeHtml(doc.dateAdded)}</span>
-                    <button class="btn-text" onclick="deleteDocument('${doc.id}')" style="color: #ef4444;"><i class="fas fa-trash"></i></button>
+                    <div>
+                        <button class="btn-text" onclick="renameDocument('${doc.id}')" style="color: var(--mute); margin-right: 0.5rem;"><i class="fas fa-edit"></i></button>
+                        <button class="btn-text" onclick="deleteDocument('${doc.id}')" style="color: #ef4444;"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             </div>
         </div>`;
     }).join('');
 }
+
+window.renameDocument = async (id) => {
+    const doc = appState.documents.find(d => d.id === id);
+    if (!doc) return;
+    const newName = prompt("Enter new document name:", doc.name);
+    if (!newName || newName === doc.name) return;
+    
+    if (accessToken && navigator.onLine) {
+        try {
+            await fetch(`https://www.googleapis.com/drive/v3/files/${id}`, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: newName })
+            });
+        } catch(e) {
+            console.error("Failed to rename document on drive:", e);
+            alert("Failed to rename file in Google Drive. Changes will only apply locally.");
+        }
+    }
+    doc.name = newName;
+    saveState();
+    renderDocuments();
+};
 
 window.deleteDocument = async (id) => {
     if (!confirm('Are you sure you want to permanently delete this document from Google Drive?')) return;
