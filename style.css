@@ -1962,6 +1962,12 @@ td {
 .note-card h4 {
   margin-bottom: 0.75rem;
   font-size: 1rem;
+  word-wrap: break-word;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .note-card p {
